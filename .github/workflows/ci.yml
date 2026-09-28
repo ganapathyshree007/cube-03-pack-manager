@@ -1,0 +1,53 @@
+name: Pack Manager checks
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: pack
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local-admin-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pack"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql+psycopg://pack_app:local-development-only@127.0.0.1:5432/pack
+      MIGRATION_DATABASE_URL: postgresql+psycopg://postgres:local-admin-only@127.0.0.1:5432/pack
+      PACK_POSTGRES_TESTS: '1'
+      AUTH_MODE: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: {version: '0.11.14'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: uv sync --frozen
+      - run: uv run python -c "import psycopg; c=psycopg.connect('postgresql://postgres:local-admin-only@127.0.0.1:5432/pack',autocommit=True); c.execute(open('infra/local-init.sql').read()); c.close()"
+      - run: uv run alembic upgrade head
+      - run: uv run ruff check backend tests evaluation
+      - run: uv run pytest -q
+      - run: npm ci && npm run build && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Prepare explicit browser-test image and server
+        run: |
+          mkdir -p .local/qa
+          uv run python -c "from PIL import Image; Image.new('RGB',(100,100),'white').save('.local/test-only.png')"
+          uv run uvicorn backend.main:app --host 127.0.0.1 --port 8000 > .local/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/v1/health/ready && break; sleep 1; done
+      - run: npx playwright test
+        working-directory: frontend
+      - run: docker build -t pack-manager:test .
+      - run: az bicep build --file infra/foundation.bicep --outfile /tmp/foundation.json && az bicep build --file infra/application.bicep --outfile /tmp/application.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-evidence
+          path: |
+            .local/qa
+            frontend/test-results

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {"value": "REPLACE_WITH_AUTHORIZED_REGION"},
+    "prefix": {"value": "REPLACE"},
+    "monthlyBudget": {"value": 0},
+    "budgetContactEmails": {"value": ["REPLACE_WITH_YOUR_EMAIL"]},
+    "budgetStartDate": {"value": "REPLACE_WITH_FIRST_DAY_OF_DEPLOYMENT_MONTH_UTC"}
+  }
+}

@@ -1,182 +1,82 @@
-# Cube Buildathon · 03 · Pack Manager
+# Pack Manager
 
-**Commerce Context stream · Round 2 · Individual Build**
+**Order verification before sealing.** A constrained AI inspection workflow for merchant-fulfilled sellers and 3PL pack stations. One model call observes an open box; ordinary code compares supported identities/counts with the saved order. Unclear evidence remains UNCERTAIN, discrepancies STOP & FIX, and errors save a pending record without AI permission to seal.
 
-> Five agents, one unit, one record that follows it.
-> A physical product arrives, gets prepped, gets shipped, comes back. At every step a person makes a fast judgment that nobody records. **You build the agent that makes one of those judgments, and leaves proof.**
+Built in the supplied fork. The original problem statement is preserved in [docs/STARTER_README.md](docs/STARTER_README.md). RULES.md is unchanged.
 
-**New here? Read these first:**
+## Implemented scope
 
-1. [`GITHUB-GUIDE.md`](GITHUB-GUIDE.md) explains how to fork the repository, set it up, build and push your work.
-2. [`RULES.md`](RULES.md) covers the repository and engineering rules.
+- React/TypeScript workspace: catalogue/reference photos, orders/CSV import, capture, results, history, retake, supervisor review and JSON export.
+- FastAPI, SQLAlchemy, Alembic and PostgreSQL with forced row-level security and a non-bypass application role.
+- Durable jobs and one inference reservation per organization + unit_id, shared across all attempts. Failed calls are never retried automatically.
+- Real Azure OpenAI adapter, private local/Blob storage and hosted Entra sign-in. Azure access has not been supplied or verified.
+- Deterministic reconciliation; synthetic observations exist only in isolated software tests, never as a live UI mode.
+- Azure Bicep and release workflow prepared; no cloud resources provisioned or public URL verified.
 
----
+This is not an autonomous multi-tool LLM agent. The participant explicitly selected the starter's one-call rule over the earlier controller design. No model calls generate explanations or choose tools.
 
-## Your problem statement: Pack Manager
+## Start locally
 
-|                              |                                                                                                                 |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| **Position in the chain**    | Step 3 of 5. Outbound to buyer.                                                                                 |
-| **Customer**                 | Seller or 3PL packing outbound orders                                                                           |
-| **What gets recorded**       | Contents at seal                                                                                                |
-| **Who consumes your output** | Returns Manager (what was actually sent) and Recovery Manager (buyer disputes, empty-box and wrong-item claims) |
+Use Docker Desktop (Linux engine), Python 3.12 and Node 24. Versions are locked in uv.lock, requirements.lock and frontend/package-lock.json.
 
-A picker assembles an order and closes the box. If the wrong item or quantity goes in, the customer gets a mis-ship: a refund, a return, a replacement shipment and often the review. Nobody checks, because checking every box by hand costs more than the mis-ships do.
-
-**What the agent returns, from a photograph of the open box before it is sealed:**
-
-* Every item present, matched against the order lines
-* Quantities correct per line
-* Nothing extra in the box
-* A verdict: seal it, or stop and fix
-
-> **Know your customer's limits.** This only exists for merchant-fulfilled and 3PL orders. If a seller is fully FBA, Amazon packs the box and there is nothing to verify. That narrows your customer more than the other statements.
-
-> **Be honest about competition.** Three funded companies already sell pack verification into large distribution centers. You will not out-feature them in two weeks. Your question is whether it can work for a seller with no fixed station and no hardware budget, which is a customer they do not call on.
-
-### The chain you are part of
-
-```text
- Supplier delivery      Inbound to Amazon     Outbound to buyer     Customer return        Money back
- ┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
- │ 01 Receiving │ ───▶ │ 02 Prep      │ ───▶ │ 03 Pack      │ ───▶ │ 04 Returns   │      │ 05 Recovery  │
- │ condition on │      │ compliance   │      │ contents at  │      │ condition &  │      │ reads all    │
- │ arrival      │      │ proof        │      │ seal         │      │ disposition  │      │ four → claim │
- └──────┬───────┘      └──────┬───────┘      └──────┬───────┘      └──────┬───────┘      └──────▲───────┘
-        └─────────────────────┴─────────────────────┴─────────────────────┴─────────────────────┘
+```powershell
+Copy-Item .env.example .env
+docker compose up --build -d
 ```
 
-The first four are the same machine: a camera, a model, and a decision bound to a record. What changes is the ruleset, the buyer and the moment. The fifth has no camera. It turns the other four's records into a claim.
+Open http://127.0.0.1:8000. Local authentication is development-only; never expose it publicly. Development database credentials must not be used in Azure.
 
-Your output has to be usable by another pod. That's deliberate, and it's scored.
+Host development:
 
----
-
-## Reference data
-
-`data/` holds a **dummy** CSV for reference while you design and build. Its columns and meanings are listed in [`data/README.md`](data/README.md).
-
-**The data is synthetic.** The SKUs, ASINs, FNSKUs, orders, suppliers, operators and amounts are all invented. The requirement flags and fee amounts are **not** Amazon's real rules or fees. Engineering rule 5 applies: look the authoritative rule up. The `photo_refs` paths are placeholders, and no images ship with this repo. Your fixtures and eval set are yours to capture.
-
-All five buildathon repos share the same `unit_id` values (`UNIT-0001` … `UNIT-0100`). You can follow one unit from receiving through recovery, the same way the real records will be joined. In the sample, each unit takes one route: **FBA** (prep, then Amazon ships it and charges fees) or **merchant-fulfilled / 3PL** (the seller packs it). So a unit has a Prep record or a Pack record, never both.
-
----
-
-## How this works
-
-You have a defined problem statement and a repository to build from. Real products are built backwards from the customer and forwards through the evidence. You should understand the customer and the operational workflow before you write code, then build and measure whether the solution works.
-
-Your goal is to turn the Pack Manager problem into a working, measurable agent.
-
-### What you're given
-
-* This problem statement
-* A domain brief covering the real economics, fee structures and what a working day in a warehouse looks like *(shared by the organisers)*
-* The engineering rules in [`RULES.md`](RULES.md)
-* Repository sample data and supporting resources
-* Any additional build resources shared by the organisers
-
-### What you produce
-
-Build your solution in **your own GitHub fork**.
-
-Your final Round 2 submission should include:
-
-* A working Pack Manager
-* An `README.md` explaining your solution, setup, assumptions and limitations
-* An `ARCHITECTURE.md`
-* An eval report/results with numbers and named failure modes
-* A demo video
-* A deployment URL, where applicable
-* Your mandatory LinkedIn post URL
-
-## Build and submission flow
-
-```text
-Understand
-    ↓
-Build
-    ↓
-Test
-    ↓
-Evaluate
-    ↓
-Document
-    ↓
-Demo / Deploy
-    ↓
-Submit
+```powershell
+uv sync --frozen
+docker compose up -d db
+uv run alembic upgrade head
+cd frontend
+npm ci
+npm run build
+cd ..
+uv run uvicorn backend.main:app --host 127.0.0.1 --port 8000 --no-proxy-headers
+# Separate terminal:
+uv run python -m backend.worker
 ```
 
-Round 2 is an **individual build**.
+Docker Desktop failed to start on the build machine. Local verification used workspace-local PostgreSQL 17 binaries on loopback, not SQLite. The fallback runtime is ignored by Git; Docker Compose is the standard setup.
 
-The official build phase begins on **25 September 2026 at 9:00 AM IST**.
+## Operator workflow
 
-Submissions open from **27 September 2026**.
+1. Add real authorized products and distinguishing variants. Up to four reference images per SKU; 30 catalogue SKUs maximum. The first six configured reference images enter the single model call, a documented baseline limit.
+2. Create an order with a stable physical unit ID. Positive whole quantities only; duplicate SKU lines merge. CSV columns: order_id, unit_id, channel, order_lines. Lines use SKU:qty;SKU:qty. observed_in_box and operator_verdict are ignored.
+3. Expose every item and label in one layer. Choose the order and upload its open-box photograph.
+4. Without Azure, Save for review persists pending evidence. With a configured provider and worker, inspection processes once and displays checks and evidence.
+5. A corrected box starts a new attempt. Retakes do not reset the unit budget. Supervisor review records actor/reason separately from the automated result.
+6. Export provisional JSON. Official contract compatibility remains unverified.
 
-The final submission deadline is **1 October 2026 at 6:00 PM IST**.
+## Secure Azure model configuration
 
-The submission form closes permanently at the deadline. **There is no resubmission.**
+Edit ignored .env locally. Set AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_VERSION and AZURE_OPENAI_VISION_DEPLOYMENT to values from your actual deployment. Do not guess region, API version or model capability. The adapter requires image input, JSON output and max_completion_tokens support; real capability testing is pending.
 
-All code commits forming your Round 2 submission must be made during the authorised build phase. Do not continue making Round 2 code changes after the build phase ends.
+Prefer DefaultAzureCredential: Azure CLI login locally, or managed identity with the Azure OpenAI inference role in cloud. If needed, use AZURE_OPENAI_API_KEY only in ignored local .env or approved Key Vault configuration. Never put secrets in React, Git, chat or exported records. SDK retries are zero. Capability testing consumes its dedicated unit's one-call budget; do not probe an evaluation unit and run it again.
 
-## What we're being straight with you about
+## Verification
 
-* **The core assumption is untested.** Nobody knows yet whether vision models can identify products and verify box contents reliably across long-tail catalogues without per-SKU training. Finding out that it doesn't hold, and documenting that clearly, counts as a useful outcome.
-* **Nobody has spoken to a customer yet.** If you can get a real prep center or seller on a call, ask them to rank the five problems by urgency. Don't ask whether they'd buy what you're building.
-* **The background documents disagree in places.** A contradiction is a finding. Raise it as an Issue labelled `finding`.
-
----
-
-## Evaluation
-
-Your Round 2 submission is evaluated out of **100 points**:
-
-| Criterion                                    |  Points |
-| -------------------------------------------- | ------: |
-| Problem Understanding & Solution Relevance   |  **15** |
-| Agent Functionality & Decision Quality       |  **25** |
-| Evaluation, Accuracy & Uncertainty Handling  |  **25** |
-| Evidence, Traceability & Engineering Quality |  **20** |
-| UX, Demo & Documentation                     |  **15** |
-| **TOTAL**                                    | **100** |
-
-For the vision-based portions of the Pack Manager, use an appropriate unseen/held-out evaluation set and report your methodology, results, false positives, false negatives, `UNCERTAIN` cases and failure modes.
-
----
-
-## Evidence and decision traceability
-
-Your Pack Manager should leave evidence behind for its decisions.
-
-At minimum, the workflow should make it possible to understand:
-
-```text
-What should be in the box?
-        ↓
-What was actually found?
-        ↓
-What checks were performed?
-        ↓
-What verdict was produced?
-        ↓
-Why?
+```powershell
+uv run ruff check backend tests evaluation
+uv run pytest -q
+$env:PACK_POSTGRES_TESTS='1'
+uv run pytest -q
+cd frontend
+npm run build
+npx playwright install chromium
+npx playwright test
 ```
 
-Use the official evidence contract provided by the organisers as the baseline for interoperability with the other Managers.
+Browser tests require the server, migrated database and .local/test-only.png. CI creates an explicitly synthetic image. Browser test records are labeled SOFTWARE TEST ONLY. None of these checks measures vision accuracy.
 
----
+## Remaining gates
 
-## PASS · FAIL · UNCERTAIN
+Real-provider access, official schema, genuine merchandise captures, two human reviewers, held-out evaluation, Azure scope/budget authorization, hosted sign-in verification, cloud verification of public-demo isolation/quotas/expiry, Docker image execution and real demo recording remain pending. No measured accuracy, latency, savings or commercial advantage is claimed.
 
-For individual checks:
+Hosted access supports Entra sign-in and optional isolated anonymous demo sessions. Demo sessions have no supervisor privileges, expire after 24 hours and are capped at ten images and two submissions/day. The demo stays disabled until a signing secret is configured. Orders/history have search and 50-row pagination; supervisors can archive products while retaining snapshots. A separate attributed packed acknowledgement never changes the automated outcome. There is no independent barcode decoder. Image-only verification cannot certify hidden contents or capture freshness.
 
-* **PASS** — the evidence supports the condition.
-* **FAIL** — the evidence shows the condition is not met.
-* **UNCERTAIN** — the evidence is insufficient for a reliable judgment.
-
-`UNCERTAIN` is not simply a low-confidence PASS.
-
----
-
-*CUBE Buildathon · Commerce Context*
+See ARCHITECTURE.md, EVALUATION.md, DEPLOYMENT.md, TEST_REPORT.md, docs/CONTRACT.md, docs/FINDINGS.md and SUBMISSION_CHECKLIST.md.

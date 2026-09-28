@@ -1,0 +1,3 @@
+CREATE ROLE pack_app LOGIN PASSWORD 'local-development-only' NOSUPERUSER NOBYPASSRLS;
+GRANT CONNECT ON DATABASE pack TO pack_app;
+GRANT USAGE ON SCHEMA public TO pack_app;
