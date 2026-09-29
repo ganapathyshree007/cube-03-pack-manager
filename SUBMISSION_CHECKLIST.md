@@ -18,7 +18,7 @@ Build opens 25 Sep 2026 09:00 IST; submission opens 27 Sep; deadline 1 Oct 2026 
 - [x] Test one-call crash recovery and competing workers locally.
 - [ ] Run cloud reliability checks and execute Docker build.
 - [ ] Record/verify live demo video.
-- [ ] Commit/push source within authorized window; check links.
+- [x] Commit/push source within authorized window; check links.
 - [ ] Approve/publish LinkedIn post with tags and record URL.
 - [ ] Check final official form for additional requirements.
 - [ ] Explicitly authorize one-shot submission before deadline.

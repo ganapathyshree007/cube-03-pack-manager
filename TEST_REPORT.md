@@ -19,6 +19,8 @@ No real vision inference, official contract validation, customer usability study
 
 Docker Desktop failed before engine startup with an inaccessible dockerInference socket. No global Docker data was removed or reset. Docker Compose config and Dockerfile are authored; container build/execution remains unverified. Workspace-local PostgreSQL allowed actual persistence and RLS testing without substituting SQLite.
 
+29 September update: the first GitHub Actions run successfully built the Docker image, ran backend/browser tests and compiled Bicep. Its final uv cache cleanup timed out because the background `uv run` server held the cache lock. CI now starts that server directly with the installed Python and stops it explicitly. A separate container startup/database/worker smoke check has been added; its result is pending the next run. Local Docker Desktop remains unavailable.
+
 Commands: uv run ruff check backend tests evaluation; PACK_POSTGRES_TESTS=1 uv run pytest -q; npm run build; npx playwright test; bicep build infra/foundation.bicep; bicep build infra/application.bicep. Tests use isolated tenant IDs; browser records explicitly say SOFTWARE TEST ONLY.
 
 After browser testing, run `uv run python -m scripts.clean_browser_fixtures` in local mode to remove only the explicitly identified browser fixtures and their unshared images. Other records are retained.

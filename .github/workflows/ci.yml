@@ -38,12 +38,36 @@ jobs:
         run: |
           mkdir -p .local/qa
           uv run python -c "from PIL import Image; Image.new('RGB',(100,100),'white').save('.local/test-only.png')"
-          uv run uvicorn backend.main:app --host 127.0.0.1 --port 8000 > .local/web.log 2>&1 &
-          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/api/v1/health/ready && break; sleep 1; done
+          .venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 > .local/web.log 2>&1 &
+          echo $! > .local/web.pid
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/api/v1/health/ready; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
       - run: npx playwright test
         working-directory: frontend
       - run: docker build -t pack-manager:test .
+      - name: Verify built container against PostgreSQL
+        run: |
+          docker run -d --name pack-container-smoke --network host \
+            -e DATABASE_URL -e AUTH_MODE=local -e LOCAL_ORGANIZATION=container-smoke \
+            pack-manager:test uvicorn backend.main:app --host 127.0.0.1 --port 8001 --no-proxy-headers
+          trap 'docker logs pack-container-smoke; docker rm -f pack-container-smoke' EXIT
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8001/api/v1/health/ready; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" = 1
+          curl -fsS http://127.0.0.1:8001/ | grep -q 'Pack Manager'
+          curl -fsS http://127.0.0.1:8001/api/v1/summary | python -c 'import json,sys; assert json.load(sys.stdin)["total"] == 0'
+          docker exec pack-container-smoke python -c 'from backend.worker import process_one; assert not process_one("container-smoke")'
       - run: az bicep build --file infra/foundation.bicep --outfile /tmp/foundation.json && az bicep build --file infra/application.bicep --outfile /tmp/application.json
+      - name: Stop browser-test server
+        if: always()
+        run: if test -f .local/web.pid; then kill "$(cat .local/web.pid)" || true; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
