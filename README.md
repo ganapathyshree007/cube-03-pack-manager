@@ -43,6 +43,8 @@ uv run python -m backend.worker
 
 Docker Desktop failed to start on the build machine. Local verification used workspace-local PostgreSQL 17 binaries on loopback, not SQLite. The fallback runtime is ignored by Git; Docker Compose is the standard setup.
 
+For a local interface walkthrough, run `uv run python -m scripts.seed_local_demo` while the server is running. This adds three clearly labelled fictional products, three orders and one draft inspection without photographs, model calls or invented outcomes. Archive these demo products before configuring a real merchandise catalogue. See [docs/REAL_DATA_SETUP.md](docs/REAL_DATA_SETUP.md) for the real inspection inputs.
+
 ## Operator workflow
 
 1. Add real authorized products and distinguishing variants. Up to four reference images per SKU; 30 catalogue SKUs maximum. The first six configured reference images enter the single model call, a documented baseline limit.
@@ -75,7 +77,7 @@ Browser tests require the server, migrated database and .local/test-only.png. CI
 
 ## Remaining gates
 
-Real-provider access, official schema, genuine merchandise captures, two human reviewers, held-out evaluation, Azure scope/budget authorization, hosted sign-in verification, cloud verification of public-demo isolation/quotas/expiry, Docker image execution and real demo recording remain pending. No measured accuracy, latency, savings or commercial advantage is claimed.
+Real-provider access, official schema, genuine merchandise captures, two human reviewers, held-out evaluation, Azure scope/budget authorization, hosted sign-in verification, cloud verification of public-demo isolation/quotas/expiry and real demo recording remain pending. Docker image build and execution passed in [GitHub CI](https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36595446848). No measured accuracy, latency, savings or commercial advantage is claimed.
 
 Hosted access supports Entra sign-in and optional isolated anonymous demo sessions. Demo sessions have no supervisor privileges, expire after 24 hours and are capped at ten images and two submissions/day. The demo stays disabled until a signing secret is configured. Orders/history have search and 50-row pagination; supervisors can archive products while retaining snapshots. A separate attributed packed acknowledgement never changes the automated outcome. There is no independent barcode decoder. Image-only verification cannot certify hidden contents or capture freshness.
 

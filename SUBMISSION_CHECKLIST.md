@@ -16,7 +16,8 @@ Build opens 25 Sep 2026 09:00 IST; submission opens 27 Sep; deadline 1 Oct 2026 
 - [ ] Run frozen held-out evaluation with two prior independent human labels.
 - [ ] Generate actual official-schema evidence example.
 - [x] Test one-call crash recovery and competing workers locally.
-- [ ] Run cloud reliability checks and execute Docker build.
+- [x] Build and execute Docker image in GitHub CI.
+- [ ] Run cloud reliability checks.
 - [ ] Record/verify live demo video.
 - [x] Commit/push source within authorized window; check links.
 - [ ] Approve/publish LinkedIn post with tags and record URL.

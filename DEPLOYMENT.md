@@ -55,4 +55,4 @@ Keep prior tested image tags/revisions. Redeploy the prior image or activate its
 
 Teardown is intentionally manual: export required evidence, identify the exact authorized resource group and review retained backup/Key Vault policies, then explicitly approve deleting that scope. No teardown script executes automatically. Local Compose volumes likewise should not be removed without deciding whether to retain evidence.
 
-Current verification gaps: cloud provisioning, network reachability, identity grants, model capability, hosted sign-in, demo expiry in Azure, GitHub OIDC and Docker image execution. Docker Desktop's local engine error is documented in TEST_REPORT.md.
+Current verification gaps: cloud provisioning, network reachability, identity grants, model capability, hosted sign-in, demo expiry in Azure and GitHub OIDC. Docker image build/execution passed in GitHub CI on 29 September. Docker Desktop's local engine error is documented in TEST_REPORT.md. Azure CLI 2.90.0 is available in the ignored local tools directory; Azure sign-in and an authorized subscription/scope/budget are still required.
