@@ -9,7 +9,7 @@ Built in the supplied fork. The original problem statement is preserved in [docs
 - React/TypeScript workspace: catalogue/reference photos, orders/CSV import, capture, results, history, retake, supervisor review and JSON export.
 - FastAPI, SQLAlchemy, Alembic and PostgreSQL with forced row-level security and a non-bypass application role.
 - Durable jobs and one inference reservation per organization + unit_id, shared across all attempts. Failed calls are never retried automatically.
-- Real Azure OpenAI adapter, private local/Blob storage and hosted Entra sign-in. Azure access has not been supplied or verified.
+- Azure OpenAI adapter, private local/Blob storage and hosted Entra sign-in implemented. Azure CLI sign-in is verified; model access and hosted operation remain unverified. The student subscription's India-region restriction is documented in [docs/AZURE_CREDIT_PLAN.md](docs/AZURE_CREDIT_PLAN.md).
 - Deterministic reconciliation; synthetic observations exist only in isolated software tests, never as a live UI mode.
 - Azure Bicep and release workflow prepared; no cloud resources provisioned or public URL verified.
 
@@ -77,7 +77,7 @@ Browser tests require the server, migrated database and .local/test-only.png. CI
 
 ## Remaining gates
 
-Real-provider access, official schema, genuine merchandise captures, two human reviewers, held-out evaluation, Azure scope/budget authorization, hosted sign-in verification, cloud verification of public-demo isolation/quotas/expiry and real demo recording remain pending. Docker image build and execution passed in [GitHub CI](https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36595446848). No measured accuracy, latency, savings or commercial advantage is claimed.
+Real-provider access, official schema, genuine merchandise captures, two human reviewers, held-out evaluation, resolution of Azure region eligibility, hosted sign-in verification, cloud verification of public-demo isolation/quotas/expiry and real demo recording remain pending. The participant authorized India-only deployment within existing $100 student credit with a 30-day target; remaining credit and expiry are unverified, and no paid resources have been created. Docker image build and execution passed in [GitHub CI](https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36595446848). No measured accuracy, latency, savings or commercial advantage is claimed.
 
 Hosted access supports Entra sign-in and optional isolated anonymous demo sessions. Demo sessions have no supervisor privileges, expire after 24 hours and are capped at ten images and two submissions/day. The demo stays disabled until a signing secret is configured. Orders/history have search and 50-row pagination; supervisors can archive products while retaining snapshots. A separate attributed packed acknowledgement never changes the automated outcome. There is no independent barcode decoder. Image-only verification cannot certify hidden contents or capture freshness.
 
