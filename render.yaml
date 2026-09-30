@@ -1,0 +1,42 @@
+# Free hosting only, as authorized. Automatic inspection worker is deferred.
+# Dedicated Supabase database/bucket and hosted authentication are required.
+services:
+  - type: web
+    name: pack-manager-web
+    runtime: docker
+    region: singapore
+    plan: free
+    autoDeployTrigger: off
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health/ready
+    envVars:
+      - fromGroup: pack-manager-runtime
+envVarGroups:
+  - name: pack-manager-runtime
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_MODE
+        value: entra
+      - key: WORKER_ENABLED
+        value: "false"
+      - key: ENTRA_TENANT_ID
+        sync: false
+      - key: ENTRA_AUDIENCE
+        sync: false
+      - key: ENTRA_CLIENT_ID
+        sync: false
+      - key: ENTRA_SCOPE
+        sync: false
+      - key: STORAGE_MODE
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: evidence
+      - key: DEMO_ENABLED
+        value: "false"
+      - key: DAILY_MODEL_LIMIT
+        value: "10"

@@ -30,6 +30,7 @@ import { api, authorizedFetch, type RecordRow } from "./api";
 import "@fontsource-variable/inter";
 import "./styles.css";
 import { AuthGate } from "./auth";
+import { Landing } from "./landing";
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
 const labels: Record<string, string> = {
@@ -288,7 +289,18 @@ function App() {
           <span className="connection">
             <span className={orderError ? "dot warning" : "dot"} />
             {orderError ? "Database disconnected" : "Pack station"}
-            {me?.role==='demo'&&<button className="text-button" onClick={async()=>{await api('/demo-session',{method:'DELETE'});localStorage.removeItem('pack-attempt');location.reload()}}>End demo</button>}
+            {me?.role === "demo" && (
+              <button
+                className="text-button"
+                onClick={async () => {
+                  await api("/demo-session", { method: "DELETE" });
+                  localStorage.removeItem("pack-attempt");
+                  location.reload();
+                }}
+              >
+                End demo
+              </button>
+            )}
             <span className="avatar">PM</span>
           </span>
         </header>
@@ -360,6 +372,42 @@ function App() {
           )}
           {page === "Overview" && (
             <>
+              <section className="setup-guide" aria-label="Workspace setup">
+                <h2>Build your first real inspection</h2>
+                <p>
+                  Use your own products and photographs. Records labelled DEMO
+                  ONLY are fictional examples, not inspection evidence.
+                </p>
+                <div className="setup-steps">
+                  <button onClick={() => setPage("Catalogue")}>
+                    <strong>01 · Prepare the catalogue</strong>
+                    <span>
+                      {products.length} active products. Add real SKUs and
+                      reference photographs.
+                    </span>
+                  </button>
+                  <button onClick={() => setPage("Orders")}>
+                    <strong>02 · Define the order</strong>
+                    <span>
+                      Save expected quantities and a unique physical unit ID.
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActive(null);
+                      localStorage.removeItem("pack-attempt");
+                      setPage("Inspection");
+                    }}
+                  >
+                    <strong>03 · Capture and inspect</strong>
+                    <span>
+                      {config?.model_configured
+                        ? "Capture all items and labels in one clear view."
+                        : "Capture evidence for review. Model connection is still required for AI inspection."}
+                    </span>
+                  </button>
+                </div>
+              </section>
               <section className="metrics" aria-label="Inspection totals">
                 <Metric
                   label="Recorded inspections"
@@ -640,8 +688,40 @@ function App() {
                           })
                         }
                       >
-                        <Download size={16} /> Export evidence JSON
+                        <Download size={16} /> Export workspace JSON (legacy)
                       </button>
+                      <button
+                        className="text-button"
+                        disabled={
+                          !current.image_id ||
+                          current.status === "draft" ||
+                          !!current.overrides?.length
+                        }
+                        onClick={() =>
+                          action(async () => {
+                            const result = await api(
+                              `/inspections/${active}/contract`,
+                            );
+                            const url = URL.createObjectURL(
+                              new Blob([JSON.stringify(result, null, 2)], {
+                                type: "application/json",
+                              }),
+                            );
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `pack-v1.1-${active}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          })
+                        }
+                      >
+                        <Download size={16} /> Export contract 1.1 JSON
+                      </button>
+                      <p className="micro">
+                        Contract export needs a saved capture. Legacy
+                        outcome-only reviews cannot be converted into per-check
+                        evidence.
+                      </p>
                       {me?.role === "demo" && (
                         <p className="micro">
                           Demo session: supervisor review is unavailable.
@@ -1481,9 +1561,14 @@ function ReviewModal({
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={client}>
-      <AuthGate>
-        <App />
-      </AuthGate>
+      {location.pathname === "/workspace" ||
+      location.pathname.startsWith("/workspace/") ? (
+        <AuthGate>
+          <App />
+        </AuthGate>
+      ) : (
+        <Landing />
+      )}
     </QueryClientProvider>
   </React.StrictMode>,
 );

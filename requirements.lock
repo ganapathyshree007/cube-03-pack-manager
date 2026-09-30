@@ -8,6 +8,7 @@ annotated-types==0.8.0
     # via pydantic
 anyio==4.15.1
     # via
+    #   httpx
     #   httpx2
     #   openai
     #   starlette
@@ -21,7 +22,10 @@ azure-identity==1.25.3
 azure-storage-blob==12.30.3
     # via pack-manager
 certifi==2026.7.22
-    # via requests
+    # via
+    #   httpcore
+    #   httpx
+    #   requests
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.5.1
@@ -38,12 +42,17 @@ fastapi==0.141.1
     # via pack-manager
 h11==0.16.0
     # via
+    #   httpcore
     #   httpcore2
     #   uvicorn
+httpcore==1.0.9
+    # via httpx
 httpcore2==2.13.1 ; sys_platform != 'emscripten'
     # via httpx2
 httptools==0.8.0
     # via uvicorn
+httpx==0.28.1
+    # via pack-manager
 httpx2==2.13.1
     # via openai
 httpx2-jsfetch==1.0 ; sys_platform == 'emscripten'
@@ -51,6 +60,7 @@ httpx2-jsfetch==1.0 ; sys_platform == 'emscripten'
 idna==3.20
     # via
     #   anyio
+    #   httpx
     #   httpx2
     #   requests
 isodate==0.7.2

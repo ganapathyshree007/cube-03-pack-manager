@@ -56,6 +56,28 @@ def test_unknown_count_is_not_zero():
     assert next(c for c in result["checks"] if c["check_key"] == "quantity_matches")["verdict"] == "UNCERTAIN"
 
 
+def test_presence_and_quantity_are_independent_contract_checks():
+    result = reconcile([{"sku": "A", "quantity": 2}], observation(["A"]), {"A"}, "image")
+    checks = {c["check_key"]: c["verdict"] for c in result["checks"]}
+    assert checks["all_items_present"] == "PASS"
+    assert checks["quantities_correct"] == "FAIL"
+    assert checks["order_matches_manifest"] == "FAIL"
+
+
+def test_excess_requested_sku_is_an_extra_item():
+    result = reconcile([{"sku": "A", "quantity": 1}], observation(["A", "A"]), {"A"}, "image")
+    assert next(c for c in result["checks"] if c["check_key"] == "no_extra_items")["verdict"] == "FAIL"
+
+
+def test_unresolved_observation_cannot_assert_exact_counts():
+    result = reconcile(
+        [{"sku": "A", "quantity": 1}], observation(["A"], unresolved=["Hidden item"]), {"A"}, "image"
+    )
+    assert (
+        next(c for c in result["checks"] if c["check_key"] == "quantities_correct")["verdict"] == "UNCERTAIN"
+    )
+
+
 def test_unsupported_catalogue_identity_does_not_seal():
     assert (
         reconcile([{"sku": "A", "quantity": 1}], observation(["INVENTED"]), {"A"}, "i")["decision"]

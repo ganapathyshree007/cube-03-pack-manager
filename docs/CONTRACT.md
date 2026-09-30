@@ -1,4 +1,6 @@
-# Provisional evidence mapping
+# Legacy evidence mapping and 1.1 migration
+
+**30 September update:** the participant supplied Evidence Contract 1.1 and the Recovery check registry. See [supplied-data review](SUPPLIED_DATA_REVIEW.md) for the implemented reader, exact hash serialization, legacy limitations and outstanding capture/review requirements. The table below describes the retained legacy workspace export, not the official contract. Do not present it as 1.1 compliance.
 
 No organizer schema, sample JSON output or validation fixtures ship in the supplied starter. CSV rows are explicitly synthetic and are not an evidence contract. Handbook p. 11 supplies names and verdict meanings, not complete types/enums. Current schema_version is provisional-0.1; compatibility is unverified.
 

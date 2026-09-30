@@ -26,6 +26,7 @@ class OrderLine(Strict):
 class Order(Strict):
     reference: str = Field(min_length=1, max_length=120)
     unit_id: str = Field(min_length=1, max_length=120)
+    shipment_id: str | None = Field(default=None, min_length=1, max_length=120)
     channel: Literal["amazon_mfn", "shopify", "walmart", "3pl_client"] = "3pl_client"
     lines: list[OrderLine] = Field(min_length=1, max_length=100)
 

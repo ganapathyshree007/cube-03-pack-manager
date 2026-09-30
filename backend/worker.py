@@ -18,6 +18,8 @@ running = True
 
 
 def process_one(org, infer=provider.inspect):
+    if not settings().worker_enabled:
+        return False
     owner = uid()
     with transaction(org) as conn:
         query = jobs.select().where(

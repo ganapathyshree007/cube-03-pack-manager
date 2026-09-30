@@ -77,6 +77,7 @@ def test_rls_forced_and_no_role_bypass(context):
     assert client.get("/api/v1/inspections").json() == []
     assert client.get(f"/api/v1/images/{image['id']}").status_code == 404
     assert client.get(f"/api/v1/inspections/{attempt['id']}").status_code == 404
+    assert client.get(f"/v1/records/{attempt['id']}").status_code == 404
     with transaction(other.organization) as conn:
         assert conn.execute(records.select()).all() == []
 
@@ -90,6 +91,11 @@ def test_pending_idempotency_review_and_supersession(context):
     response = client.post(path + "/submit", json=payload, headers=headers)
     assert response.status_code == 202, response.text
     assert response.json()["status"] == "pending"
+    contract = client.get(f"/v1/records/{attempt['id']}")
+    assert contract.status_code == 200, contract.text
+    assert contract.json()["schema_version"] == "1.1"
+    assert contract.json()["images"][0]["bytes"] > 0
+    assert contract.json()["subject"]["quantity_observed"] is None
     assert client.post(path + "/submit", json=payload, headers=headers).json() == response.json()
     assert client.post(path + "/submit", json={"image_id": "different"}, headers=headers).status_code == 409
     row = client.get(path).json()
@@ -99,6 +105,7 @@ def test_pending_idempotency_review_and_supersession(context):
         "reason": "Test supervisor confirms a discrepancy",
     }
     assert client.post(path + "/review", json=review).status_code == 200
+    assert client.get(f"/v1/records/{attempt['id']}").status_code == 409
     assert client.post(path + "/review", json=review).status_code == 409
     exported = client.get(path + "/export").json()
     assert exported["outcome"]["decision"] is None

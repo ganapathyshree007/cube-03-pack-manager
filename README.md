@@ -52,7 +52,7 @@ For a local interface walkthrough, run `uv run python -m scripts.seed_local_demo
 3. Expose every item and label in one layer. Choose the order and upload its open-box photograph.
 4. Without Azure, Save for review persists pending evidence. With a configured provider and worker, inspection processes once and displays checks and evidence.
 5. A corrected box starts a new attempt. Retakes do not reset the unit budget. Supervisor review records actor/reason separately from the automated result.
-6. Export provisional JSON. Official contract compatibility remains unverified.
+6. The workspace export remains provisional. A strict Evidence Contract 1.1 reader is available at `/v1/records/{record_id}` for eligible captures; the full capture/review migration is still in progress. See [supplied-data review](docs/SUPPLIED_DATA_REVIEW.md).
 
 ## Secure Azure model configuration
 
@@ -77,7 +77,7 @@ Browser tests require the server, migrated database and .local/test-only.png. CI
 
 ## Remaining gates
 
-Real-provider access, official schema, genuine merchandise captures, two human reviewers, held-out evaluation, resolution of Azure region eligibility, hosted sign-in verification, cloud verification of public-demo isolation/quotas/expiry and real demo recording remain pending. The participant authorized India-only deployment within existing $100 student credit with a 30-day target; remaining credit and expiry are unverified, and no paid resources have been created. Docker image build and execution passed in [GitHub CI](https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36595446848). No measured accuracy, latency, savings or commercial advantage is claimed.
+The official Evidence Contract 1.1 has now been supplied; full workflow compatibility remains in progress. Real-provider access, verified product/SKU mappings, genuine packing scenes, human review labels, held-out evaluation, hosted sign-in, cloud isolation verification and real demo recording remain pending. Singapore is authorized. The latest hosting constraint is free Render/Supabase only, with the paid worker deferred. The Azure credit balance and expiry remain unverified; no paid resources have been created. See [Render deployment preparation](docs/DEPLOYMENT_RENDER.md). Docker image build and execution passed in [GitHub CI](https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36595446848). No measured accuracy, latency, savings or commercial advantage is claimed.
 
 Hosted access supports Entra sign-in and optional isolated anonymous demo sessions. Demo sessions have no supervisor privileges, expire after 24 hours and are capped at ten images and two submissions/day. The demo stays disabled until a signing secret is configured. Orders/history have search and 50-row pagination; supervisors can archive products while retaining snapshots. A separate attributed packed acknowledgement never changes the automated outcome. There is no independent barcode decoder. Image-only verification cannot certify hidden contents or capture freshness.
 

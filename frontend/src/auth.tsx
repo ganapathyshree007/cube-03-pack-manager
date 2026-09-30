@@ -29,7 +29,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         auth: {
           clientId: cfg.entra_client_id,
           authority: `https://login.microsoftonline.com/${cfg.entra_tenant_id}`,
-          redirectUri: location.origin,
+          redirectUri: location.origin + "/workspace",
         },
         cache: { cacheLocation: "sessionStorage" },
       });

@@ -1,4 +1,8 @@
-# Verification report — 28 September 2026
+# Verification report — 30 September 2026
+
+Latest local verification: **75 backend tests passed** with PostgreSQL enabled, **4 browser tests passed**, frontend production build passed, and Ruff passed. Added coverage: research manifest validation and split leakage, mocked private Supabase storage, independent presence/quantity registry checks, strict contract 1.1 serialization and tenant-denied access, deferred worker behavior, public landing page accessibility and mobile width. Original Drive product data and RPC research photographs were not used as synthetic test labels. No real model inference or full contract lifecycle validation has occurred. Render project container exists; service/database deployment is not verified.
+
+The following describes earlier verification and its limitations.
 
 This report distinguishes software fixtures from actual vision evidence. Latest local pass: 55 backend tests passed, 3 browser tests passed, frontend production build passed and lint passed. Both Bicep templates compiled and Docker Compose configuration validated during this build; cloud execution remains unverified.
 

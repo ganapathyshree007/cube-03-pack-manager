@@ -123,7 +123,7 @@ def ready():
 @app.get("/api/v1/config")
 def config():
     return {
-        "model_configured": settings().provider_configured,
+        "model_configured": settings().provider_configured and settings().worker_enabled,
         "auth_mode": settings().auth_mode,
         "demo_enabled": settings().demo_enabled and len(settings().demo_signing_secret) >= 32,
         "entra_tenant_id": settings().entra_tenant_id,
@@ -131,7 +131,9 @@ def config():
         "entra_scope": settings().entra_scope,
         "workflow": "One-call constrained AI inspection",
         "schema": "provisional-0.1",
-        "model_status": "Configured, capability unverified"
+        "model_status": "Automatic inspections paused — worker not deployed"
+        if not settings().worker_enabled
+        else "Configured, capability unverified"
         if settings().provider_configured
         else "Model not configured",
     }
@@ -310,6 +312,7 @@ async def import_orders(file: UploadFile, who: Actor = Depends(actor)):
             Order(
                 reference=r["order_id"],
                 unit_id=r["unit_id"],
+                shipment_id=r.get("shipment_id") or None,
                 channel=r["channel"],
                 lines=[
                     {"sku": item.rsplit(":", 1)[0], "quantity": int(item.rsplit(":", 1)[1])}
@@ -353,6 +356,7 @@ async def upload(file: UploadFile, who: Actor = Depends(actor)):
         "key": key,
         "original_key": key + ".source",
         "sha256": hashlib.sha256(clean).hexdigest(),
+        "bytes": len(clean),
         "original_sha256": original_hash,
         "width": size[0],
         "height": size[1],
@@ -560,12 +564,16 @@ def submit(
             raise HTTPException(409, "Image has not been saved")
         if row["data"]["status"] != "draft" or row["data"]["superseded_by"]:
             raise HTTPException(409, "Attempt already submitted or superseded")
-        status = "queued" if settings().provider_configured else "pending"
+        status = "queued" if settings().provider_configured and settings().worker_enabled else "pending"
         data = {
             **row["data"],
             "image_id": payload.image_id,
             "status": status,
-            "reason": None if status == "queued" else "Model not configured",
+            "reason": None
+            if status == "queued"
+            else "Automatic inspections paused — worker not deployed"
+            if not settings().worker_enabled
+            else "Model not configured",
         }
         replace(conn, row, data)
         conn.execute(
@@ -675,9 +683,26 @@ def export(attempt_id: str, who: Actor = Depends(actor)):
     }
 
 
+@app.get("/v1/records/{record_id}")
+@app.get("/api/v1/inspections/{record_id}/contract")
+def contract_record(record_id: str, who: Actor = Depends(actor)):
+    from .evidence import build_record
+
+    with transaction(who.organization) as conn:
+        row = fetch(conn, record_id, "attempt")
+        image = fetch(conn, row["data"]["image_id"], "image") if row["data"].get("image_id") else None
+    image_bytes = image["data"].get("bytes") if image else 0
+    if image and image_bytes is None:
+        image_bytes = len(storage.read(image["data"]["key"]))
+    try:
+        return build_record(row, image, image_bytes)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
 @app.get("/{path:path}", include_in_schema=False)
 def frontend(path: str):
-    if path.startswith("api/"):
+    if path.startswith(("api/", "v1/")):
         raise HTTPException(404, "Endpoint not found")
     root = Path("frontend/dist").resolve()
     candidate = (root / path).resolve()

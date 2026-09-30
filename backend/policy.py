@@ -6,7 +6,15 @@ from collections import Counter
 
 from .schemas import VisionObservation
 
-MANDATORY = ("input_valid", "view_sufficient", "identity_verified", "quantity_matches", "no_unexpected_items")
+PACK_CHECK_KEYS = ("all_items_present", "quantities_correct", "no_extra_items", "order_matches_manifest")
+MANDATORY = (
+    "input_valid",
+    "view_sufficient",
+    "identity_verified",
+    "quantity_matches",
+    "no_unexpected_items",
+    *PACK_CHECK_KEYS,
+)
 
 
 def digest(value):
@@ -24,7 +32,12 @@ def reconcile(lines, observation: VisionObservation, catalogue_skus, image_id):
             known[item.candidates[0]] += 1
         else:
             ambiguous = True
-    complete = observation.view_sufficient and observation.exact_count_known and not ambiguous
+    complete = (
+        observation.view_sufficient
+        and observation.exact_count_known
+        and not ambiguous
+        and not observation.unresolved
+    )
     extra = any(sku not in expected for sku in known)
     over = any(count > expected.get(sku, 0) for sku, count in known.items())
     shortage = complete and any(known[sku] < count for sku, count in expected.items())
@@ -66,6 +79,32 @@ def reconcile(lines, observation: VisionObservation, catalogue_skus, image_id):
         else "Unknown identities or blocked views remain unresolved."
         if not complete
         else "No unrequested unit observed under the capture protocol.",
+    )
+    # Presence and quantity are separate claims: one visible A can establish presence
+    # while an order for two A still fails quantities_correct.
+    presence = "PASS" if all(known[sku] > 0 for sku in expected) else "FAIL" if complete else "UNCERTAIN"
+    check(
+        "all_items_present",
+        presence,
+        "Each ordered SKU has at least one supported visible instance; this does not assert the requested quantity.",
+    )
+    check(
+        "quantities_correct", quantity, "Exact per-SKU quantities compared with the immutable order snapshot."
+    )
+    check(
+        "no_extra_items",
+        "FAIL" if extra or over else "PASS" if complete else "UNCERTAIN",
+        "Checks both unrequested SKUs and excess quantities of requested SKUs.",
+    )
+    manifest_verdicts = [c["verdict"] for c in checks]
+    check(
+        "order_matches_manifest",
+        "FAIL"
+        if "FAIL" in manifest_verdicts
+        else "UNCERTAIN"
+        if "UNCERTAIN" in manifest_verdicts
+        else "PASS",
+        "Combined presence, quantity, identity and coverage reconciliation against the saved manifest.",
     )
     verdicts = [c["verdict"] for c in checks]
     decision = "stop_and_fix" if "FAIL" in verdicts else "uncertain" if "UNCERTAIN" in verdicts else "seal"

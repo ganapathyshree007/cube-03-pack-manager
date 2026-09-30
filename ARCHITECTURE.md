@@ -7,7 +7,7 @@ flowchart LR
  Operator --> UI[React / TypeScript / TanStack Query]
  UI --> API[FastAPI / one HTTPS origin]
  API --> DB[(PostgreSQL / forced RLS)]
- API --> Storage[Private Blob / local adapter]
+ API --> Storage[Private Supabase / Azure Blob / local adapter]
  Worker[Same image / worker process] --> DB
  Worker --> VLM[One Azure vision call per unit]
  VLM --> Observations[Validated visible instances / unknowns]
@@ -30,3 +30,5 @@ Submission uses request-body hash + idempotency key. SKIP LOCKED and a 120-secon
 Azure uses ACR, private Blob objects, PostgreSQL Flexible Server on a delegated subnet/private DNS, Container Apps web/worker, separate migration job/identity, Key Vault, logs and budget alerts. App identity cannot read migration credentials. Hosted model inference needs no GPU container. Readiness checks database/schema/role without inference; liveness does not depend on provider availability. Worker minimum replica is one because polling cannot wake a zero-replica worker.
 
 The model's identity/coverage judgment is not calibrated proof. Real reliability requires held-out measurement. Optional demo sessions use signed HttpOnly/SameSite cookies and distinct organizations; PostgreSQL limits sessions, submissions and images, while the worker purges expired demo data. Local tests verify isolation and expiry; cloud verification remains pending. Orders/history paginate in 50-row pages; catalogue archival and packed acknowledgement preserve prior evidence. No physical equipment is controlled. Cloud templates compile but have not been deployed.
+
+The public landing page is at `/`; the authenticated application is at `/workspace`. Render/Supabase preparation is documented in `docs/DEPLOYMENT_RENDER.md`. The free hosting profile disables automatic inference with `WORKER_ENABLED=false`; it does not silently queue work without a deployed worker. The required Pack registry and partial Evidence Contract 1.1 migration are documented in `docs/SUPPLIED_DATA_REVIEW.md`. Legacy workspace exports remain provisional.

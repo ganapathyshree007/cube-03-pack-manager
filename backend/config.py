@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     local_role: str = "supervisor"
     storage_mode: str = "local"
     storage_root: str = ".local/images"
+    supabase_url: str = ""
+    supabase_service_role_key: str = ""
+    supabase_storage_bucket: str = "evidence"
     azure_storage_account_url: str = ""
     azure_storage_container: str = "evidence"
     azure_openai_endpoint: str = ""
@@ -30,6 +33,7 @@ class Settings(BaseSettings):
     demo_ttl_hours: int = 24
     demo_daily_sessions: int = 25
     daily_model_limit: int = 100
+    worker_enabled: bool = True
 
     @property
     def provider_configured(self):
