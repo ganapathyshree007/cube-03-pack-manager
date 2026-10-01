@@ -1,6 +1,6 @@
 # Verification report â€” 30 September 2026
 
-Current update: 87 backend tests passed together, plus the added local-model mandatory-review test passed separately (88 tests total). Six browser tests and the frontend production build passed. Actual inference attempts and failures are documented in [LOCAL_MODEL_RESULTS.md](docs/LOCAL_MODEL_RESULTS.md); software tests do not establish vision accuracy.
+Current update: 88 backend tests passed together, including the local-model mandatory-review check. Six browser tests and the frontend production build passed. Actual inference attempts and failures are documented in [LOCAL_MODEL_RESULTS.md](docs/LOCAL_MODEL_RESULTS.md); software tests do not establish vision accuracy.
 
 Earlier verification history follows.
 
