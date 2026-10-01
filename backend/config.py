@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,6 +15,8 @@ class Settings(BaseSettings):
     storage_mode: str = "local"
     storage_root: str = ".local/images"
     supabase_url: str = ""
+    supabase_publishable_key: str = ""
+    pack_organization: str = ""
     supabase_service_role_key: str = ""
     supabase_storage_bucket: str = "evidence"
     azure_storage_account_url: str = ""
@@ -22,6 +25,9 @@ class Settings(BaseSettings):
     azure_openai_api_version: str = ""
     azure_openai_vision_deployment: str = ""
     azure_openai_api_key: str = ""
+    model_provider: Literal["none", "ollama", "azure"] = "none"
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = ""
     model_timeout_seconds: int = 45
     agent_mode: str = "batched"
     entra_tenant_id: str = ""
@@ -37,6 +43,10 @@ class Settings(BaseSettings):
 
     @property
     def provider_configured(self):
+        if self.model_provider == "ollama":
+            return bool(self.ollama_base_url and self.ollama_model)
+        if self.model_provider != "azure":
+            return False
         return all(
             (self.azure_openai_endpoint, self.azure_openai_api_version, self.azure_openai_vision_deployment)
         )

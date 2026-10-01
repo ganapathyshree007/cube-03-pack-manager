@@ -5,7 +5,7 @@ export type RecordRow = {
   data: any;
 };
 let tokenProvider: (() => Promise<string>) | null = null;
-export function setTokenProvider(provider: () => Promise<string>) {
+export function setTokenProvider(provider: (() => Promise<string>) | null) {
   tokenProvider = provider;
 }
 export async function authorizedFetch(url: string, init: RequestInit = {}) {

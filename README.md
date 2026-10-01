@@ -9,9 +9,9 @@ Built in the supplied fork. The original problem statement is preserved in [docs
 - React/TypeScript workspace: catalogue/reference photos, orders/CSV import, capture, results, history, retake, supervisor review and JSON export.
 - FastAPI, SQLAlchemy, Alembic and PostgreSQL with forced row-level security and a non-bypass application role.
 - Durable jobs and one inference reservation per organization + unit_id, shared across all attempts. Failed calls are never retried automatically.
-- Azure OpenAI adapter, private local/Blob storage and hosted Entra sign-in implemented. Azure CLI sign-in is verified; model access and hosted operation remain unverified. The student subscription's India-region restriction is documented in [docs/AZURE_CREDIT_PLAN.md](docs/AZURE_CREDIT_PLAN.md).
+- Local Ollama vision adapter and private Supabase storage adapter implemented. The current plan is Render Free + Supabase with a laptop model worker; see [local vision setup and remaining deployment work](docs/LOCAL_VISION.md). Model accuracy and hosted operation require separate verification.
 - Deterministic reconciliation; synthetic observations exist only in isolated software tests, never as a live UI mode.
-- Azure Bicep and release workflow prepared; no cloud resources provisioned or public URL verified.
+- Legacy Azure configuration remains optional and disabled by default. Azure model setup was cancelled before deployment or inference; an unused account/resource group was created. No live public deployment URL is verified.
 
 This is not an autonomous multi-tool LLM agent. The participant explicitly selected the starter's one-call rule over the earlier controller design. No model calls generate explanations or choose tools.
 

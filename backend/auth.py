@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 import jwt
+import httpx
 from fastapi import HTTPException, Request
 
 from .config import settings
@@ -39,6 +40,43 @@ def actor(request: Request):
     if cfg.auth_mode == "local":
         # Local mode is only supported behind loopback-bound development ports.
         return Actor(cfg.local_organization, cfg.local_operator, cfg.local_role)
+    if cfg.auth_mode == "supabase":
+        if not cfg.supabase_url or not cfg.supabase_publishable_key or not cfg.pack_organization:
+            raise HTTPException(503, "Authentication is not configured")
+        authorization = request.headers.get("authorization", "")
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(401, "Sign in to your Pack Manager account")
+        try:
+            # Verify with Auth itself, supporting both legacy and asymmetric signing keys.
+            with httpx.Client(timeout=10, follow_redirects=False) as client:
+                response = client.get(
+                    cfg.supabase_url.rstrip("/") + "/auth/v1/user",
+                    headers={
+                        "apikey": cfg.supabase_publishable_key,
+                        "Authorization": authorization,
+                    },
+                )
+            if response.status_code >= 500 or response.status_code == 429:
+                raise HTTPException(503, "Sign-in verification temporarily unavailable")
+            response.raise_for_status()
+            user = response.json()
+            # app_metadata is administrator-controlled. Never trust user_metadata or headers.
+            metadata = user.get("app_metadata") or {}
+            if not isinstance(metadata, dict):
+                raise ValueError("Invalid account metadata")
+            role = metadata.get("pack_role")
+            organization = metadata.get("pack_organization")
+            if organization != cfg.pack_organization or role not in {"operator", "supervisor"}:
+                raise ValueError("Account has no assigned workspace role")
+            if not isinstance(user.get("id"), str) or not user["id"]:
+                raise ValueError("Missing user identity")
+            return Actor(organization, user["id"], role)
+        except HTTPException:
+            raise
+        except httpx.RequestError:
+            raise HTTPException(503, "Sign-in verification temporarily unavailable") from None
+        except (httpx.HTTPStatusError, ValueError, TypeError):
+            raise HTTPException(401, "Sign in with an authorized Pack Manager account") from None
     if cfg.auth_mode != "entra" or not cfg.entra_tenant_id or not cfg.entra_audience:
         raise HTTPException(503, "Authentication is not configured")
     token = request.headers.get("authorization", "").removeprefix("Bearer ")

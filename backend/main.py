@@ -129,6 +129,10 @@ def config():
     return {
         "model_configured": settings().provider_configured and settings().worker_enabled,
         "auth_mode": settings().auth_mode,
+        "supabase_url": settings().supabase_url if settings().auth_mode == "supabase" else "",
+        "supabase_publishable_key": settings().supabase_publishable_key
+        if settings().auth_mode == "supabase"
+        else "",
         "demo_enabled": settings().demo_enabled and len(settings().demo_signing_secret) >= 32,
         "entra_tenant_id": settings().entra_tenant_id,
         "entra_client_id": settings().entra_client_id,

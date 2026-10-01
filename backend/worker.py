@@ -1,9 +1,10 @@
 """One-call workflow. A committed call reservation is never retried after a crash."""
 
 import logging
+import argparse
 import signal
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
@@ -17,7 +18,7 @@ log = logging.getLogger("pack.worker")
 running = True
 
 
-def process_one(org, infer=provider.inspect):
+def process_one(org, infer=provider.inspect, *, only_attempt_id=None, created_after=None):
     if not settings().worker_enabled:
         return False
     owner = uid()
@@ -29,6 +30,11 @@ def process_one(org, infer=provider.inspect):
                 jobs.c.status == "pending" if settings().provider_configured else False,
             )
         )
+        # Bounded evaluation must never drain unrelated pending captures.
+        if only_attempt_id is not None:
+            query = query.where(jobs.c.attempt_id == only_attempt_id)
+        if created_after is not None:
+            query = query.where(jobs.c.created_at >= created_after)
         job = (
             conn.execute(query.order_by(jobs.c.created_at).limit(1).with_for_update(skip_locked=True))
             .mappings()
@@ -58,7 +64,7 @@ def process_one(org, infer=provider.inspect):
             .values(
                 status="running",
                 lease_owner=owner,
-                lease_until=now() + timedelta(seconds=120),
+                lease_until=now() + timedelta(seconds=max(120, settings().model_timeout_seconds + 60)),
                 retries=job["retries"] + 1,
             )
         )
@@ -72,7 +78,7 @@ def process_one(org, infer=provider.inspect):
             references = []
             for product in data["catalogue_snapshot"]:
                 for image_id in product["reference_image_ids"]:
-                    if len(references) >= 6:
+                    if len(references) >= provider.MAX_REFERENCE_IMAGES:
                         break
                     reference = fetch(conn, image_id, "image")
                     references.append((product["sku"], storage.read(reference["data"]["key"])))
@@ -159,6 +165,16 @@ def stop(*_):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="One-call inspection worker")
+    parser.add_argument("--attempt-id", help="Process only this attempt once, then exit")
+    parser.add_argument(
+        "--created-after",
+        type=datetime.fromisoformat,
+        help="Process only captures queued on/after this timezone-aware ISO timestamp",
+    )
+    args = parser.parse_args()
+    if args.created_after is not None and args.created_after.tzinfo is None:
+        parser.error("--created-after requires a timezone")
     logging.basicConfig(level=logging.INFO)
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
@@ -167,14 +183,25 @@ def main():
             org = (
                 settings().entra_tenant_id
                 if settings().auth_mode == "entra"
+                else settings().pack_organization
+                if settings().auth_mode == "supabase"
                 else settings().local_organization
             )
+            if not org:
+                raise RuntimeError("Worker organization is not configured")
             from .demo import active_demo_organizations
 
             organizations = [org, *active_demo_organizations()] if settings().demo_enabled else [org]
             worked = False
             for organization in organizations:
-                worked = process_one(organization) or worked
+                worked = (
+                    process_one(
+                        organization, only_attempt_id=args.attempt_id, created_after=args.created_after
+                    )
+                    or worked
+                )
+            if args.attempt_id:
+                return
             if not worked:
                 time.sleep(2)
         except Exception as exc:

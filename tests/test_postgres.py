@@ -1,6 +1,7 @@
 """Opt-in real PostgreSQL tests; fake inference is injected only in this module."""
 
 import os
+from datetime import datetime, timezone, timedelta
 from io import BytesIO
 from uuid import uuid4
 import pytest
@@ -26,6 +27,7 @@ def context(monkeypatch, tmp_path):
     app.dependency_overrides[actor] = lambda: user
     monkeypatch.setattr(settings(), "storage_root", str(tmp_path))
     monkeypatch.setattr(settings(), "azure_openai_endpoint", "")
+    monkeypatch.setattr(settings(), "model_provider", "azure")
     client = TestClient(app)
     yield client, org
     app.dependency_overrides.clear()
@@ -173,7 +175,9 @@ def test_one_call_budget_survives_new_attempt(context, monkeypatch):
             path + "/submit", json={"image_id": image["id"]}, headers={"Idempotency-Key": str(uuid4())}
         )
         assert result.status_code == 202, result.text
-        assert process_one(org, infer=fake_infer)
+        assert not process_one(org, infer=fake_infer, only_attempt_id="not-this-capture")
+        assert not process_one(org, infer=fake_infer, created_after=datetime.now(timezone.utc) + timedelta(days=1))
+        assert process_one(org, infer=fake_infer, only_attempt_id=attempt["id"])
         row = client.get(path).json()["data"]
         assert row["status"] == ("completed" if index == 0 else "pending")
         if index == 0:

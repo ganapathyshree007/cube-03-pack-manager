@@ -1,17 +1,32 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { PublicClientApplication } from "@azure/msal-browser";
 import { setTokenProvider } from "./api";
+import { SupabaseGate } from "./supabase-auth";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [demo, setDemo] = useState(false);
+  const [supabaseConfig, setSupabaseConfig] = useState<{
+    url: string;
+    key: string;
+  } | null>(null);
   const [login, setLogin] = useState<(() => Promise<void>) | null>(null);
   useEffect(() => {
     let active = true;
     (async () => {
       const cfg = await fetch("/api/v1/config").then((r) => r.json());
       if (active) setDemo(cfg.demo_enabled);
+      if (cfg.auth_mode === "supabase") {
+        if (!cfg.supabase_url || !cfg.supabase_publishable_key)
+          throw new Error("Hosted sign-in is not configured.");
+        if (active)
+          setSupabaseConfig({
+            url: cfg.supabase_url,
+            key: cfg.supabase_publishable_key,
+          });
+        return;
+      }
       if (cfg.demo_enabled) {
         const current = await fetch("/api/v1/me");
         if (current.ok) {
@@ -67,6 +82,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+  if (supabaseConfig)
+    return (
+      <SupabaseGate url={supabaseConfig.url} publicKey={supabaseConfig.key}>
+        {children}
+      </SupabaseGate>
+    );
   if (ready) return children;
   return (
     <div className="sign-in">

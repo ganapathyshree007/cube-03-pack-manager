@@ -17,16 +17,12 @@ envVarGroups:
       - key: DATABASE_URL
         sync: false
       - key: AUTH_MODE
-        value: entra
+        value: supabase
       - key: WORKER_ENABLED
         value: "false"
-      - key: ENTRA_TENANT_ID
+      - key: PACK_ORGANIZATION
         sync: false
-      - key: ENTRA_AUDIENCE
-        sync: false
-      - key: ENTRA_CLIENT_ID
-        sync: false
-      - key: ENTRA_SCOPE
+      - key: SUPABASE_PUBLISHABLE_KEY
         sync: false
       - key: STORAGE_MODE
         value: supabase

@@ -14,6 +14,7 @@ def test_configuration_honestly_reports_missing_model(monkeypatch):
     from backend.config import settings
 
     monkeypatch.setattr(settings(), "azure_openai_endpoint", "")
+    monkeypatch.setattr(settings(), "model_provider", "none")
     assert client.get("/api/v1/config").json()["model_status"] == "Model not configured"
 
 
