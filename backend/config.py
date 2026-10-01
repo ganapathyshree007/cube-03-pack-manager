@@ -25,7 +25,11 @@ class Settings(BaseSettings):
     azure_openai_api_version: str = ""
     azure_openai_vision_deployment: str = ""
     azure_openai_api_key: str = ""
-    model_provider: Literal["none", "ollama", "azure"] = "none"
+    model_provider: Literal["none", "ollama", "azure", "gemini"] = "none"
+    gemini_api_key: str = ""
+    gemini_model: str = ""
+    gemini_free_tier_confirmed: bool = False
+    hosted_model_review_required: bool = True
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = ""
     local_model_review_required: bool = True
@@ -41,9 +45,16 @@ class Settings(BaseSettings):
     demo_daily_sessions: int = 25
     daily_model_limit: int = 100
     worker_enabled: bool = True
+    allowed_origins: str = ""
 
     @property
     def provider_configured(self):
+        if self.model_provider == "gemini":
+            return bool(
+                self.gemini_api_key
+                and self.gemini_model == "gemini-2.5-flash"
+                and self.gemini_free_tier_confirmed
+            )
         if self.model_provider == "ollama":
             return bool(self.ollama_base_url and self.ollama_model)
         if self.model_provider != "azure":

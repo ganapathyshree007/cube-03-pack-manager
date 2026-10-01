@@ -4,6 +4,8 @@
 
 Built in the supplied fork. The original problem statement is preserved in [docs/STARTER_README.md](docs/STARTER_README.md). RULES.md is unchanged.
 
+**Post-competition continuation:** this branch is `post-competition/completion-audit`. Original Round 2 snapshot `1e503a0` remains on `main`. The handbook/RULES deadline is 1 October 18:00 IST; the participant reports a portal deadline of 23:59 IST. No extension document has been verified. Do not present these changes as the original submission.
+
 **Current validation:** local model inference runs, but research tests did not establish correct product identification or counting. Local-model results require human review. See [actual test results](docs/LOCAL_MODEL_RESULTS.md).
 
 ## Implemented scope
@@ -11,7 +13,7 @@ Built in the supplied fork. The original problem statement is preserved in [docs
 - React/TypeScript workspace: catalogue/reference photos, orders/CSV import, capture, results, history, retake, supervisor review and JSON export.
 - FastAPI, SQLAlchemy, Alembic and PostgreSQL with forced row-level security and a non-bypass application role.
 - Durable jobs and one inference reservation per organization + unit_id, shared across all attempts. Failed calls are never retried automatically.
-- Local Ollama vision adapter and private Supabase storage adapter implemented. The current plan is Render Free + Supabase with a laptop model worker; see [local vision setup and remaining deployment work](docs/LOCAL_VISION.md). Model accuracy and hosted operation require separate verification.
+- Local Ollama vision adapter and private Supabase storage adapter implemented. The public target is Render Free + Supabase with a separately hosted Gemini endpoint; the laptop is local research only; see [local vision setup and remaining deployment work](docs/LOCAL_VISION.md). Model accuracy and hosted operation require separate verification.
 - Deterministic reconciliation; synthetic observations exist only in isolated software tests, never as a live UI mode.
 - Legacy Azure configuration remains optional and disabled by default. Azure model setup was cancelled before deployment or inference; an unused account/resource group was created. No live public deployment URL is verified.
 
@@ -49,18 +51,24 @@ For a local interface walkthrough, run `uv run python -m scripts.seed_local_demo
 
 ## Operator workflow
 
-1. Add real authorized products and distinguishing variants. Up to four reference images per SKU; 30 catalogue SKUs maximum. The first six configured reference images enter the single model call, a documented baseline limit.
+1. Add real authorized products and distinguishing variants. Up to four reference images per SKU; 30 catalogue SKUs maximum. Experimental local and Gemini adapters support only 1–4 active products, each with a valid reference; one reference per product enters the call. The broader 30-SKU database limit does not imply model support. References compare identity; only the primary photo contributes counts.
 2. Create an order with a stable physical unit ID. Positive whole quantities only; duplicate SKU lines merge. CSV columns: order_id, unit_id, channel, order_lines. Lines use SKU:qty;SKU:qty. observed_in_box and operator_verdict are ignored.
 3. Expose every item and label in one layer. Choose the order and upload its open-box photograph.
-4. Without Azure, Save for review persists pending evidence. With a configured provider and worker, inspection processes once and displays checks and evidence.
+4. With no configured provider/worker, Save for review persists pending evidence. With a configured provider and worker, inspection processes once and displays checks and evidence.
 5. A corrected box starts a new attempt. Retakes do not reset the unit budget. Supervisor review records actor/reason separately from the automated result.
 6. The workspace export remains provisional. A strict Evidence Contract 1.1 reader is available at `/v1/records/{record_id}` for eligible captures; the full capture/review migration is still in progress. See [supplied-data review](docs/SUPPLIED_DATA_REVIEW.md).
 
-## Secure Azure model configuration
+## Model configuration and deployment
 
-Edit ignored .env locally. Set AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_VERSION and AZURE_OPENAI_VISION_DEPLOYMENT to values from your actual deployment. Do not guess region, API version or model capability. The adapter requires image input, JSON output and max_completion_tokens support; real capability testing is pending.
+Default `MODEL_PROVIDER=none` makes no inference calls. Local experiments use `ollama` with `qwen3-vl:2b-instruct`; its recognition/counting failed validation. Keep `LOCAL_MODEL_REVIEW_REQUIRED=true`.
 
-Prefer DefaultAzureCredential: Azure CLI login locally, or managed identity with the Azure OpenAI inference role in cloud. If needed, use AZURE_OPENAI_API_KEY only in ignored local .env or approved Key Vault configuration. Never put secrets in React, Git, chat or exported records. SDK retries are zero. Capability testing consumes its dedicated unit's one-call budget; do not probe an evaluation unit and run it again.
+The new optional `gemini` adapter uses one REST request to the verified model ID `gemini-2.5-flash`. Set server-side `GEMINI_API_KEY`, `GEMINI_MODEL`, and `GEMINI_FREE_TIER_CONFIRMED=true` only after checking the account is Free tier with billing disabled. Keep `HOSTED_MODEL_REVIEW_REQUIRED=true`. Quota errors become pending; never enable paid billing or retry the same unit. Key/model-list access was verified, but no hosted image inference has been verified. Do not share keys in chat, source, browser code or exports. Replace any key disclosed in chat.
+
+Google's free tier may use content for product improvement. Only submit photographs permitted for that processing. Restricted RPC files remain private local research. No Azure calls have been made; legacy Azure modules are disabled unless explicitly selected.
+
+Prefer the existing same-origin React + FastAPI Docker deployment on Render to avoid introducing a second origin before the current app works. Supabase supplies private storage, authentication and PostgreSQL. Vercel is an optional later frontend split, not a deployed component. `python -m backend.service` supervises the API and optional remote-inference worker; jobs/reservations remain in PostgreSQL across restarts. It rejects local auth, local storage and Ollama. Free Render can sleep, interrupt jobs or suspend on quota exhaustion: this is a limited preview, not an always-on production service. See [deployment runbook](docs/DEPLOYMENT_RENDER.md).
+
+No public app URL is currently verified. Never treat localhost or a dashboard URL as the deployment URL.
 
 ## Verification
 
@@ -77,10 +85,10 @@ npx playwright test
 
 Browser tests require the server, migrated database and .local/test-only.png. CI creates an explicitly synthetic image. Browser test records are labeled SOFTWARE TEST ONLY. None of these checks measures vision accuracy.
 
-## Remaining gates
+## Verified and unfinished
 
-The official Evidence Contract 1.1 has now been supplied; full workflow compatibility remains in progress. Real-provider access, verified product/SKU mappings, genuine packing scenes, human review labels, held-out evaluation, hosted sign-in, cloud isolation verification and real demo recording remain pending. Singapore is authorized. The latest hosting constraint is free Render/Supabase only, with the paid worker deferred. The Azure credit balance and expiry remain unverified; no paid resources have been created. See [Render deployment preparation](docs/DEPLOYMENT_RENDER.md). Docker image build and execution passed in [GitHub CI](https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36595446848). No measured accuracy, latency, savings or commercial advantage is claimed.
+See [TEST_REPORT.md](TEST_REPORT.md) for current software results and [EVALUATION.md](EVALUATION.md) for the seven original RPC experiments plus one separately reported post-competition experiment. Valid JSON is not proof of recognition. No held-out accuracy or own-product performance has been established.
 
-Hosted access supports Entra sign-in and optional isolated anonymous demo sessions. Demo sessions have no supervisor privileges, expire after 24 hours and are capped at ten images and two submissions/day. The demo stays disabled until a signing secret is configured. Orders/history have search and 50-row pagination; supervisors can archive products while retaining snapshots. A separate attributed packed acknowledgement never changes the automated outcome. There is no independent barcode decoder. Image-only verification cannot certify hidden contents or capture freshness.
+The interface supports catalogue/order management, desktop uploads, saved pending inspections, expected-versus-observed tables, readable model claims, attributed reviews and history. Phone-width layouts and keyboard behavior were software-tested; actual phone camera capture is not yet verified. No independent barcode decoder or calibrated confidence is claimed.
 
-See ARCHITECTURE.md, EVALUATION.md, DEPLOYMENT.md, TEST_REPORT.md, docs/CONTRACT.md, docs/FINDINGS.md and SUBMISSION_CHECKLIST.md.
+Outstanding: dedicated Supabase provisioning and secrets, real hosted authentication/storage, authorized hosted-test photos, public deployment/end-to-end inference, 50 unseen units with two prior independent human labels, full official capture/direct-upload/share workflow, demo recording and LinkedIn publication. Detailed status and exact actions are in [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md). Do not call the project production-ready or fully complete.

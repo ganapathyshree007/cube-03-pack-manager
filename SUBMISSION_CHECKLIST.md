@@ -1,42 +1,34 @@
-# Submission readiness
+# Submission checklist — post-competition continuation
 
-Build opens 25 Sep 2026 09:00 IST; submission opens 27 Sep; deadline 1 Oct 2026 18:00 IST. Check any separate organizer cutoff. No resubmission. Publishing and one-shot submission require explicit participant instructions.
+**Not submission-ready.** Original snapshot `1e503a0` remains on `main`; later work belongs to `post-competition/completion-audit`. Handbook pages 5–6 and RULES.md say 1 October 2026 18:00 IST. The participant reports 23:59 IST on the portal, but no updated organiser document has been verified. Eligibility is unresolved. No backdating, final form submission or LinkedIn publication has occurred.
 
-## Participant-provided submission checklist audit — 30 September
+| Requirement | Status | Evidence / remaining action |
+|---|---|---|
+| PCK Pack Manager track | VERIFIED | README and preserved starter problem |
+| Official fork | VERIFIED previously; recheck before submission | https://github.com/ganapathyshree007/cube-03-pack-manager |
+| Original snapshot | VERIFIED | main, 1e503a0, 1 Oct 17:59:48 IST; actual form submission unverified |
+| Post-competition branch | VERIFIED locally | post-competition/completion-audit; push recorded after checks |
+| README | VERIFIED as documentation | Actual setup, usage, model behavior and limitations |
+| ARCHITECTURE | VERIFIED as documentation | Components, flow, inference boundary, RLS and recovery |
+| Evaluation report | VERIFIED as report; evaluation INCOMPLETE | EVALUATION.md; eight development attempts, zero held-out units |
+| Reliable identification/counting | INCOMPLETE | Reference confusion persists; no exact successful order result |
+| 50 unseen units, two independent prior human labels | BLOCKED | Need permitted packing scenes and actual human reviewers |
+| One-call enforcement/reconciliation | VERIFIED locally | PostgreSQL tests; committed org+unit reservation; no inference retry |
+| Full Evidence Contract 1.1 workflow | INCOMPLETE | Readers/feed/reviews implemented; allocation/completion, direct uploads, 2–3 views and scoped sharing missing |
+| Auth/storage/tenant isolation | VERIFIED locally; hosted BLOCKED | Dedicated Supabase database, private bucket and users not provisioned |
+| Camera/mobile/keyboard | PARTLY VERIFIED | Camera/fallback implemented; layout/software tests; physical phone test pending |
+| Public deployment URL | BLOCKED | Render form prepared; dedicated Supabase and zero-spend protections pending |
+| Public end-to-end inference/recovery | BLOCKED | Need deployed services, permitted fresh photo, real inference, save/reopen and tenant tests |
+| Demo video | INCOMPLETE | DEMO_SCRIPT.md; recording/upload/accessibility check pending |
+| LinkedIn post and official tags | INCOMPLETE | LINKEDIN_DRAFT.md only; owner publication pending |
+| Link accessibility | PARTLY VERIFIED | Repository previously checked; no deployment/video/post links exist |
+| Deadline/extension eligibility | BLOCKED | Resolve conflicting cutoff before claiming later branch eligibility |
+| Final form/no-resubmission review | INCOMPLETE | Owner must review and submit once; no submission authorized here |
 
-| Required item | Verified status |
-|---|---|
-| Official track fork and implementation pushed | Public fork verified; current source pushed. This does not establish feature completion. |
-| README: problem, solution, setup, usage, assumptions/limitations | Covered; model and cloud limitations explicitly disclosed. |
-| ARCHITECTURE: components, flow, model use, engineering decisions | Covered, including one-call reservation, deterministic comparison, RLS and human review. |
-| Demo video and accessible link | Missing. Script exists; no recording or uploaded link. |
-| Live deployment URL, if applicable | Missing. India-only Azure eligibility blocked. Checklist wording is conditional; do not assume it waives requirements elsewhere. |
-| Published Round 2 LinkedIn post with track and CodeQuesters/Sydon.AI tags | Missing. Draft only; official tag selection and publication pending. |
-| All submission links accessible | Repository checked; video, post and deployment links do not yet exist. |
+## Owner actions
 
-Do not mark submission ready from repository/tests alone. A local recording can truthfully demonstrate orders, evidence capture, pending status, review and export; it cannot demonstrate live AI results while the provider is unconfigured. Genuine model testing and evaluation remain uncompleted engineering goals even though this short submission checklist does not list a dataset upload.
-
-- [x] Clone supplied fork; read rules/problem statement/data.
-- [x] Implement conservative one-call workflow, UI and provisional evidence export.
-- [x] Test real PostgreSQL isolation, pending evidence, review and retake.
-- [x] Author architecture, evaluation protocol, deployment runbook and submission drafts.
-- [x] Compile Bicep templates locally.
-- [x] Implement optional isolated demo quotas/expiry, pagination, product archival and packed acknowledgement.
-- [ ] Verify these controls in the deployed environment.
-- [ ] Confirm official evidence schema and unit-budget interpretation.
-- [ ] Supply genuine authorized products/images and provenance.
-- [ ] Configure/capability-test Azure; run real inference locally.
-- [x] Receive India-only scope and existing $100 student-credit authorization with a 30-day target.
-- [ ] Resolve region/model access, verify remaining credit/expiry, deploy and verify hosted sign-in/inference with laptop off.
-- [ ] Run frozen held-out evaluation with two prior independent human labels.
-- [ ] Generate actual official-schema evidence example.
-- [x] Test one-call crash recovery and competing workers locally.
-- [x] Build and execute Docker image in GitHub CI.
-- [ ] Run cloud reliability checks.
-- [ ] Record/verify live demo video.
-- [x] Commit/push source within authorized window; check links.
-- [ ] Approve/publish LinkedIn post with tags and record URL.
-- [ ] Check final official form for additional requirements.
-- [ ] Explicitly authorize one-shot submission before deadline.
-
-Locally implemented/tested is distinct from real-provider tested, cloud deployed, public URL verified and held-out evaluated. Those latter gates remain pending.
+1. Finish the prepared Free Supabase project in Singapore by entering/submitting its password locally. If the free-project limit blocks creation, report it without upgrading/deleting another project. Share only its dashboard URL.
+2. Replace the Google key disclosed in chat and save the replacement as GEMINI_API_KEY in ignored .env. Keep billing disabled. Metadata access succeeded; no hosted photo call has run.
+3. Supply photos permitted for Google free-tier processing, real catalogue identities and order details. RPC remains private local noncommercial research.
+4. Arrange the required unseen packing units and actual independent human labels.
+5. Confirm deadline eligibility, record the real demo, publish the reviewed LinkedIn post with official CodeQuesters and Sydon.AI tags, verify links, and submit the form once yourself.

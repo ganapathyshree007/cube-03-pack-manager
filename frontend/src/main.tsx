@@ -31,6 +31,7 @@ import "@fontsource-variable/inter";
 import "./styles.css";
 import { AuthGate } from "./auth";
 import { Landing } from "./landing";
+import { CameraCapture } from "./camera";
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: 1 } } });
 const labels: Record<string, string> = {
@@ -155,15 +156,28 @@ function App() {
       ),
   );
   const refresh = () => cache.invalidateQueries();
+  const actionInFlight = useRef(false);
+  function submissionKey(attemptId: string) {
+    const storageKey = `pack-submission-${attemptId}`;
+    const existing = localStorage.getItem(storageKey);
+    if (existing) return existing;
+    const key = crypto.randomUUID();
+    localStorage.setItem(storageKey, key);
+    return key;
+  }
   async function action(fn: () => Promise<void>) {
+    // State updates alone do not synchronously guard rapid duplicate clicks.
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setBusy(true);
     setMessage("");
     try {
       await fn();
-      await refresh();
     } catch (e) {
       setMessage((e as Error).message);
     } finally {
+      await refresh();
+      actionInFlight.current = false;
       setBusy(false);
     }
   }
@@ -188,7 +202,7 @@ function App() {
       const image = await api("/images", { method: "POST", body: fd });
       await api(`/inspections/${row.id}/submit`, {
         method: "POST",
-        headers: { "Idempotency-Key": crypto.randomUUID() },
+        headers: { "Idempotency-Key": submissionKey(row.id) },
         body: JSON.stringify({ image_id: image.id }),
       });
     });
@@ -214,7 +228,7 @@ function App() {
       const image = await api("/images", { method: "POST", body: fd });
       await api(`/inspections/${active}/submit`, {
         method: "POST",
-        headers: { "Idempotency-Key": crypto.randomUUID() },
+        headers: { "Idempotency-Key": submissionKey(active!) },
         body: JSON.stringify({ image_id: image.id }),
       });
       setPhoto(null);
@@ -544,6 +558,9 @@ function App() {
                     <small>JPG, PNG or WebP · up to 10 MB</small>
                   </label>
                 )}
+                {(!current || current.status === "draft") && (
+                  <CameraCapture onCapture={choosePhoto} />
+                )}
                 {imageUrl && (!current || current.status === "draft") && (
                   <label className="replace-photo">
                     Replace photograph
@@ -855,7 +872,7 @@ function App() {
                       <tr>
                         <th>SKU</th>
                         <th>Expected</th>
-                        <th>Observed</th>
+                        <th>Model-reported visible quantity</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -872,6 +889,51 @@ function App() {
                       ))}
                     </tbody>
                   </table>
+                  {current.result.observation && (
+                    <div className="notice">
+                      <h3>What the model reported</h3>
+                      <p>
+                        These are model claims about the primary photograph.
+                        Catalogue references are never package contents. Human
+                        reviews are recorded separately.
+                      </p>
+                      {["ollama", "gemini"].includes(current.result.provenance?.provider) && (
+                        <p>
+                          <strong>
+                            Experimental model: identification and counting are
+                            not validated. Check every claim against the
+                            photograph.
+                          </strong>
+                        </p>
+                      )}
+                      <ul>
+                        {current.result.observation.instances.map(
+                          (item: any) => (
+                            <li key={item.instance_id}>
+                              <strong>
+                                {item.candidates.length
+                                  ? item.candidates.join(" / ")
+                                  : "Unknown product"}
+                              </strong>
+                              {item.identity_verified
+                                ? " — model claims identity"
+                                : " — identity unresolved"}
+                              . {item.evidence}
+                              {item.occlusion && (
+                                <span> Obstruction: {item.occlusion}.</span>
+                              )}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                      {!!current.result.observation.unresolved.length && (
+                        <p>
+                          <strong>Needs review:</strong>{" "}
+                          {current.result.observation.unresolved.join("; ")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <details>
                     <summary>Observation and model provenance</summary>
                     <pre>

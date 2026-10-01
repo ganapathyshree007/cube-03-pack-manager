@@ -6,7 +6,7 @@ import {
   type FormEvent,
 } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { setTokenProvider } from "./api";
+import { setTokenProvider, apiUrl } from "./api";
 
 export function SupabaseGate({
   url,
@@ -47,7 +47,7 @@ export function SupabaseGate({
       .then(async ({ data, error }) => {
         if (error) throw error;
         if (!data.session) return;
-        const response = await fetch("/api/v1/me", {
+        const response = await fetch(apiUrl("/api/v1/me"), {
           headers: { Authorization: `Bearer ${data.session.access_token}` },
         });
         if (!response.ok)
@@ -86,7 +86,7 @@ export function SupabaseGate({
       setPassword("");
       if (error || !data.session)
         throw new Error("Unable to sign in. Check your email and password.");
-      const response = await fetch("/api/v1/me", {
+      const response = await fetch(apiUrl("/api/v1/me"), {
         headers: { Authorization: `Bearer ${data.session.access_token}` },
       });
       if (!response.ok)

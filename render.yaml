@@ -9,6 +9,7 @@ services:
     autoDeployTrigger: off
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/v1/health/ready
+    dockerCommand: python -m backend.service
     envVars:
       - fromGroup: pack-manager-runtime
 envVarGroups:
@@ -20,6 +21,8 @@ envVarGroups:
         value: supabase
       - key: WORKER_ENABLED
         value: "false"
+      - key: MODEL_PROVIDER
+        value: none
       - key: PACK_ORGANIZATION
         sync: false
       - key: SUPABASE_PUBLISHABLE_KEY

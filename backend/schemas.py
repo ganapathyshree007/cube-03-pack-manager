@@ -76,6 +76,8 @@ class Instance(Strict):
     identity_verified: bool
     evidence: str = Field(min_length=1, max_length=2000)
     label_text: str | None
+    source_image: Literal["primary"] = "primary"
+    occlusion: str | None = None
 
 
 class VisionObservation(Strict):

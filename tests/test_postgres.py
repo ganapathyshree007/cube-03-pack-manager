@@ -544,3 +544,31 @@ def test_demo_submission_quota(context, monkeypatch):
             headers={"Idempotency-Key": str(uuid4())},
         )
         assert response.status_code == (202 if index < 2 else 429)
+
+
+def test_rejected_answer_is_private_durable_and_not_retried(context, monkeypatch):
+    from backend.provider import ProviderOutputError
+
+    client, org = context
+    monkeypatch.setattr(settings(), "model_provider", "ollama")
+    monkeypatch.setattr(settings(), "ollama_model", "fixture")
+    attempt, image = setup_attempt(client)
+    path = f"/api/v1/inspections/{attempt['id']}"
+    client.post(path + "/submit", json={"image_id": image["id"]}, headers={"Idempotency-Key": str(uuid4())})
+    calls = []
+
+    def fail(*args):
+        calls.append(1)
+        raise ProviderOutputError("Invalid structured observations", '{"partial":')
+
+    assert process_one(org, infer=fail)
+    assert not process_one(org, infer=fail)
+    assert len(calls) == 1
+    assert client.get(path).json()["data"]["result"] is None
+    assert "partial" not in client.get(path).text
+    with transaction(org) as conn:
+        rows = conn.execute(records.select().where(records.c.kind == "provider_diagnostic")).mappings().all()
+        assert len(rows) == 1
+        assert rows[0]["data"]["response_text"] == '{"partial":'
+    with transaction("other-org") as conn:
+        assert conn.execute(records.select().where(records.c.kind == "provider_diagnostic")).all() == []

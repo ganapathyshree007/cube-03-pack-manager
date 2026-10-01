@@ -85,6 +85,8 @@ def process_one(org, infer=provider.inspect, *, only_attempt_id=None, created_af
             photo = storage.read(image["data"]["key"])
         if not settings().provider_configured and infer is provider.inspect:
             raise RuntimeError("Model not configured")
+        if infer is provider.inspect and settings().model_provider in {"ollama", "gemini"}:
+            provider.local_reference_inputs(data["catalogue_snapshot"], references)
         try:
             with transaction(org) as conn:
                 insert_record(
@@ -117,13 +119,15 @@ def process_one(org, infer=provider.inspect, *, only_attempt_id=None, created_af
         result = reconcile(
             data["order_snapshot"]["lines"], observation, {p["sku"] for p in catalogue}, data["image_id"]
         )
-        if provenance.get("provider") == "ollama" and settings().local_model_review_required:
+        if (provenance.get("provider") == "ollama" and settings().local_model_review_required) or (
+            provenance.get("provider") == "gemini" and settings().hosted_model_review_required
+        ):
             result["checks"].append(
                 {
                     "check_key": "model_validation",
                     "verdict": "UNCERTAIN",
                     "confidence": None,
-                    "detail": "Experimental local model: recognition accuracy is not validated. Human review required.",
+                    "detail": "Experimental model: recognition accuracy is not validated. Human review required.",
                     "image_ids": [data["image_id"]],
                 }
             )
@@ -142,16 +146,37 @@ def process_one(org, infer=provider.inspect, *, only_attempt_id=None, created_af
             if isinstance(exc, RuntimeError)
             else f"Inspection unavailable ({type(exc).__name__}). Human review required."
         )
-        finish(org, job, owner, "pending", None, safe)
+        finish(
+            org,
+            job,
+            owner,
+            "pending",
+            None,
+            safe,
+            diagnostic=exc.diagnostic if isinstance(exc, provider.ProviderOutputError) else None,
+        )
     return True
 
 
-def finish(org, job, owner, status, result, reason):
+def finish(org, job, owner, status, result, reason, diagnostic=None):
     with transaction(org) as conn:
         current = conn.execute(jobs.select().where(jobs.c.id == job["id"]).with_for_update()).mappings().one()
         if current["lease_owner"] != owner:
             return
         row = fetch(conn, job["attempt_id"], "attempt", lock=True)
+        if diagnostic is not None:
+            # Private tenant-scoped diagnostics are not official checks, UI results,
+            # or logs. Preserve only answer text, never model thinking or request secrets.
+            insert_record(
+                conn,
+                org,
+                "provider_diagnostic",
+                {
+                    "attempt_id": row["id"],
+                    "recorded_at": now().isoformat(),
+                    **diagnostic,
+                },
+            )
         replace(conn, row, {**row["data"], "status": status, "result": result, "reason": reason})
         conn.execute(jobs.update().where(jobs.c.id == job["id"]).values(status="done", lease_until=None))
         conn.execute(

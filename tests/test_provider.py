@@ -30,7 +30,7 @@ def test_local_vision_single_request(monkeypatch, failure):
     real_client = httpx.Client
     photo = BytesIO()
     Image.new("RGB", (1800, 1500), "white").save(photo, format="JPEG")
-    references = [(f"A-{i}", photo.getvalue()) for i in range(16)]
+    references = [("A", photo.getvalue())]
 
     def handle(request):
         requests.append(request)
@@ -43,9 +43,9 @@ def test_local_vision_single_request(monkeypatch, failure):
         primary = Image.open(BytesIO(base64.b64decode(payload["messages"][-1]["images"][0])))
         reference = Image.open(BytesIO(base64.b64decode(payload["messages"][1]["images"][0])))
         assert primary.size == (1024, 853)
-        assert reference.size == (1024, 1280)
+        assert reference.size == (384, 320)
         assert sum(len(message.get("images", [])) for message in payload["messages"]) == 2
-        assert "REFERENCE CATALOGUE ONLY" in payload["messages"][1]["content"]
+        assert "IDENTITY REFERENCE ONLY" in payload["messages"][1]["content"]
         assert "expected" not in payload["messages"][-1]["content"].lower()
         if failure == "timeout":
             raise httpx.ReadTimeout("fixture timeout")
@@ -81,3 +81,27 @@ def test_local_vision_single_request(monkeypatch, failure):
         assert not result.exact_count_known
         assert provenance["provider"] == "ollama"
     assert len(requests) == 1
+
+
+def test_local_catalogue_preflight_rejects_unreferenced_or_large_catalogues():
+    with pytest.raises(RuntimeError, match="1–4"):
+        provider.local_reference_inputs([{"sku": str(i)} for i in range(5)], [])
+    with pytest.raises(RuntimeError, match="reference photograph"):
+        provider.local_reference_inputs([{"sku": "A"}], [])
+    assert provider.local_reference_inputs([{"sku": "A"}], [("A", b"a"), ("A", b"b"), ("X", b"x")]) == [
+        ("A", b"a")
+    ]
+
+
+def test_reference_cannot_be_claimed_as_primary_evidence():
+    from backend.schemas import Instance
+
+    with pytest.raises(ValueError):
+        Instance(
+            instance_id="1",
+            candidates=["A"],
+            identity_verified=True,
+            evidence="reference",
+            label_text=None,
+            source_image="reference",
+        )

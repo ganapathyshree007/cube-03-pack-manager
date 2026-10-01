@@ -4,13 +4,24 @@ export type RecordRow = {
   created_at: string;
   data: any;
 };
+export const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
+export function apiUrl(path: string): string {
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${cleanPath}`;
+}
+
 let tokenProvider: (() => Promise<string>) | null = null;
 export function setTokenProvider(provider: (() => Promise<string>) | null) {
   tokenProvider = provider;
 }
 export async function authorizedFetch(url: string, init: RequestInit = {}) {
   const token = tokenProvider ? await tokenProvider() : null;
-  return fetch(url, {
+  const targetUrl = apiUrl(url);
+  return fetch(targetUrl, {
     ...init,
     headers: {
       ...init.headers,

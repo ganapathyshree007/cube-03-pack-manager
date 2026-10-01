@@ -50,10 +50,19 @@ async def request_context(request: Request, call_next):
     from urllib.parse import urlparse
 
     origin = request.headers.get("origin")
+    allowed_list = [o.strip() for o in settings().allowed_origins.split(",") if o.strip()]
+    origin_netloc = urlparse(origin).netloc if origin else ""
+    is_allowed_origin = (
+        not origin
+        or origin_netloc == request.headers.get("host")
+        or origin in allowed_list
+        or origin_netloc in allowed_list
+        or any(origin.endswith(suffix) for suffix in allowed_list if suffix.startswith("."))
+    )
     if (
         request.method not in {"GET", "HEAD", "OPTIONS"}
         and origin
-        and urlparse(origin).netloc != request.headers.get("host")
+        and not is_allowed_origin
     ):
         return JSONResponse(
             status_code=403,
@@ -63,11 +72,25 @@ async def request_context(request: Request, call_next):
                 "request_id": request.state.request_id,
             },
         )
+    if request.method == "OPTIONS":
+        headers = {
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Request-ID",
+            "Access-Control-Max-Age": "86400",
+        }
+        if origin and is_allowed_origin:
+            headers["Access-Control-Allow-Origin"] = origin
+            headers["Access-Control-Allow-Credentials"] = "true"
+        return Response(status_code=204, headers=headers)
+
     response = await call_next(request)
     response.headers["X-Request-ID"] = request.state.request_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "same-origin"
     response.headers["Cache-Control"] = "no-store"
+    if origin and is_allowed_origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
 
@@ -145,6 +168,10 @@ def config():
         if settings().provider_configured
         and settings().model_provider == "ollama"
         and settings().local_model_review_required
+        else "Experimental hosted model — human review required"
+        if settings().provider_configured
+        and settings().model_provider == "gemini"
+        and settings().hosted_model_review_required
         else "Configured, capability unverified"
         if settings().provider_configured
         else "Model not configured",

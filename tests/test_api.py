@@ -45,3 +45,23 @@ def test_deferred_worker_is_reported_and_does_not_process(monkeypatch):
 
 def test_missing_contract_endpoint_is_not_a_successful_html_page():
     assert client.get("/v1/not-implemented").status_code == 404
+
+
+def test_cross_origin_requests_and_cors(monkeypatch):
+    from backend.config import settings
+
+    # Untrusted origin rejected on POST
+    res = client.post("/api/v1/orders", headers={"origin": "https://untrusted.com"})
+    assert res.status_code == 403
+    assert res.json()["code"] == "ORIGIN_REJECTED"
+
+    # Allowed origin configured
+    monkeypatch.setattr(settings(), "allowed_origins", "https://my-app.vercel.app")
+    res_allowed = client.options("/api/v1/orders", headers={"origin": "https://my-app.vercel.app"})
+    assert res_allowed.status_code == 204
+    assert res_allowed.headers.get("access-control-allow-origin") == "https://my-app.vercel.app"
+
+    # OPTIONS request from untrusted still returns 204 but without allow-origin header for that untrusted origin
+    res_options = client.options("/api/v1/orders", headers={"origin": "https://other.com"})
+    assert res_options.status_code == 204
+    assert res_options.headers.get("access-control-allow-origin") is None

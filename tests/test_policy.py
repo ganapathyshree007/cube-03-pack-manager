@@ -56,6 +56,14 @@ def test_unknown_count_is_not_zero():
     assert next(c for c in result["checks"] if c["check_key"] == "quantity_matches")["verdict"] == "UNCERTAIN"
 
 
+def test_occlusion_blocks_exact_count_even_with_optimistic_global_flags():
+    obs = observation(["A"])
+    obs.instances[0].occlusion = "Back of package obscures possible duplicate"
+    result = reconcile([{"sku": "A", "quantity": 1}], obs, {"A"}, "primary-image")
+    assert result["decision"] == "uncertain"
+    assert result["observed"][0]["exact_count_known"] is False
+
+
 def test_presence_and_quantity_are_independent_contract_checks():
     result = reconcile([{"sku": "A", "quantity": 2}], observation(["A"]), {"A"}, "image")
     checks = {c["check_key"]: c["verdict"] for c in result["checks"]}

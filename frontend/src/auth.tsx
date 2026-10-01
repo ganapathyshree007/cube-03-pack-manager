@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { PublicClientApplication } from "@azure/msal-browser";
-import { setTokenProvider } from "./api";
+import { setTokenProvider, apiUrl } from "./api";
 import { SupabaseGate } from "./supabase-auth";
 
 export function AuthGate({ children }: { children: ReactNode }) {
@@ -15,7 +15,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     (async () => {
-      const cfg = await fetch("/api/v1/config").then((r) => r.json());
+      const cfg = await fetch(apiUrl("/api/v1/config")).then((r) => r.json());
       if (active) setDemo(cfg.demo_enabled);
       if (cfg.auth_mode === "supabase") {
         if (!cfg.supabase_url || !cfg.supabase_publishable_key)
@@ -28,7 +28,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
         return;
       }
       if (cfg.demo_enabled) {
-        const current = await fetch("/api/v1/me");
+        const current = await fetch(apiUrl("/api/v1/me"), { credentials: "include" });
         if (current.ok) {
           if (active) setReady(true);
           return;
@@ -108,7 +108,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
           <button
             className="secondary full"
             onClick={async () => {
-              const r = await fetch("/api/v1/demo-session", { method: "POST" });
+              const r = await fetch(apiUrl("/api/v1/demo-session"), {
+                method: "POST",
+                credentials: "include",
+              });
               if (r.ok) {
                 localStorage.removeItem("pack-attempt");
                 location.reload();

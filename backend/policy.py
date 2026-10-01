@@ -55,6 +55,7 @@ def reconcile(lines, observation: VisionObservation, catalogue_skus, image_id):
         and observation.exact_count_known
         and not ambiguous
         and not observation.unresolved
+        and not any(item.occlusion for item in observation.instances)
     )
     extra = any(sku not in expected for sku in known)
     over = any(count > expected.get(sku, 0) for sku, count in known.items())
