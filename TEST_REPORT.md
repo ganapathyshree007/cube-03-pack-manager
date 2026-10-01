@@ -1,6 +1,6 @@
 # Verification report — 30 September 2026
 
-Latest local verification: **75 backend tests passed** with PostgreSQL enabled, **4 browser tests passed**, frontend production build passed, and Ruff passed. Added coverage: research manifest validation and split leakage, mocked private Supabase storage, independent presence/quantity registry checks, strict contract 1.1 serialization and tenant-denied access, deferred worker behavior, public landing page accessibility and mobile width. Original Drive product data and RPC research photographs were not used as synthetic test labels. No real model inference or full contract lifecycle validation has occurred. Render project container exists; service/database deployment is not verified.
+Latest local verification: **76 backend tests passed** with PostgreSQL enabled, **5 browser tests passed**, frontend production build passed, and Ruff passed. Added coverage: research manifest validation and split leakage, mocked private Supabase storage, independent presence/quantity registry checks, strict contract 1.1 serialization and tenant-denied access, deferred worker behavior, public landing page accessibility and mobile width. Original Drive product data and RPC research photographs were not used as synthetic test labels. No real model inference or full contract lifecycle validation has occurred. Render project container exists; service/database deployment is not verified.
 
 The following describes earlier verification and its limitations.
 
@@ -30,3 +30,7 @@ Docker Desktop failed before engine startup with an inaccessible dockerInference
 Commands: uv run ruff check backend tests evaluation; PACK_POSTGRES_TESTS=1 uv run pytest -q; npm run build; npx playwright test; bicep build infra/foundation.bicep; bicep build infra/application.bicep. Tests use isolated tenant IDs; browser records explicitly say SOFTWARE TEST ONLY.
 
 After browser testing, run `uv run python -m scripts.clean_browser_fixtures` in local mode to remove only the explicitly identified browser fixtures and their unshared images. Other records are retained.
+
+1 October: added real PostgreSQL coverage for the paginated contract feed, timestamp/agent filters, tenant denial, reasoned per-check overrides, stale review rejection, original hash preservation, and refusal to pack after a human failed check. Database bootstrap now grants connection on the actual connected database, supporting Supabase database names. GitHub CI for commit `1e472ad` passed: https://github.com/ganapathyshree007/cube-03-pack-manager/actions/runs/36725003913. This CI result predates the feed/per-check follow-up.
+
+The per-check UI browser test uses explicitly mocked software-only records, preserves the visible original PASS after a human FAIL, checks reason submission, and verifies phone-width layout. The original four browser tests passed alongside it; after correcting the fixture events response shape, the new test passed on rerun. No real inference was used.

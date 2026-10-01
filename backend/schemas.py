@@ -54,6 +54,18 @@ class Review(Strict):
     reason: str = Field(min_length=10, max_length=2000)
 
 
+class CheckReview(Strict):
+    expected_version: int = Field(gt=0)
+    verdict: Literal["pass", "fail", "uncertain"]
+    reason: str = Field(min_length=10, max_length=2000)
+
+    @model_validator(mode="after")
+    def meaningful_reason(self):
+        if len(self.reason.strip()) < 10:
+            raise ValueError("A meaningful review reason is required")
+        return self
+
+
 class Packed(Strict):
     expected_version: int = Field(gt=0)
 

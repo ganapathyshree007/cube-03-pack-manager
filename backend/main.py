@@ -1,5 +1,9 @@
 import hashlib
 import csv
+import base64
+import json
+from datetime import datetime, UTC
+from typing import Literal
 from io import StringIO
 from pathlib import Path
 
@@ -14,8 +18,8 @@ from . import storage
 from .auth import Actor, actor
 from .config import settings
 from .db import event, events, fetch, insert_record, jobs, now, records, replace, transaction, uid
-from .policy import digest
-from .schemas import NewAttempt, Order, Product, Review, Submit, Packed
+from .policy import digest, effective_decision
+from .schemas import NewAttempt, Order, Product, Review, Submit, Packed, CheckReview
 
 app = FastAPI(title="Pack Manager", version="0.1.0", docs_url="/api/docs", openapi_url="/api/openapi.json")
 
@@ -210,7 +214,10 @@ def listing(kind, who, offset=0, q="", exceptions=False):
             query = query.where(
                 or_(
                     records.c.data["status"].as_string() == "pending",
-                    records.c.data["result"]["decision"].as_string().in_(["uncertain", "stop_and_fix"]),
+                    func.coalesce(
+                        records.c.data["review_decision"].as_string(),
+                        records.c.data["result"]["decision"].as_string(),
+                    ).in_(["uncertain", "stop_and_fix"]),
                 )
             )
         return [
@@ -435,13 +442,22 @@ def summary(who: Actor = Depends(actor)):
         return {
             "total": conn.execute(base).scalar_one(),
             "approved": conn.execute(
-                base.where(records.c.data["result"]["decision"].as_string() == "seal")
+                base.where(
+                    func.coalesce(
+                        records.c.data["review_decision"].as_string(),
+                        records.c.data["result"]["decision"].as_string(),
+                    )
+                    == "seal"
+                )
             ).scalar_one(),
             "exceptions": conn.execute(
                 base.where(
                     or_(
                         records.c.data["status"].as_string() == "pending",
-                        records.c.data["result"]["decision"].as_string().in_(["uncertain", "stop_and_fix"]),
+                        func.coalesce(
+                            records.c.data["review_decision"].as_string(),
+                            records.c.data["result"]["decision"].as_string(),
+                        ).in_(["uncertain", "stop_and_fix"]),
                     )
                 )
             ).scalar_one(),
@@ -465,11 +481,7 @@ def acknowledge_packed(attempt_id: str, payload: Packed, who: Actor = Depends(ac
     with transaction(who.organization) as conn:
         row = fetch(conn, attempt_id, "attempt", lock=True)
         data = row["data"]
-        outcome = (
-            data["overrides"][-1]["new_outcome"]
-            if data["overrides"]
-            else (data["result"] or {}).get("decision")
-        )
+        outcome = effective_decision(data)
         if row["version"] != payload.expected_version or data["superseded_by"] or outcome != "seal":
             raise HTTPException(409, "Current approved attempt and version required")
         if data.get("packed_acknowledgement"):
@@ -603,6 +615,7 @@ def review(attempt_id: str, payload: Review, who: Actor = Depends(actor)):
             row["version"] != payload.expected_version
             or data["superseded_by"]
             or data["status"] in {"draft", "running", "queued"}
+            or data.get("check_overrides")
         ):
             raise HTTPException(409, "Review is stale or the inspection is not ready for review")
         entry = {
@@ -614,13 +627,52 @@ def review(attempt_id: str, payload: Review, who: Actor = Depends(actor)):
             else (data["result"] or {}).get("decision"),
             "new_outcome": payload.decision,
         }
-        replace(conn, row, {**data, "overrides": [*data["overrides"], entry]})
+        replace(
+            conn, row, {**data, "overrides": [*data["overrides"], entry], "review_decision": payload.decision}
+        )
         # A manual disposition ends pending pre-provider work; later configuration must not
         # silently send this already-reviewed unit to inference.
         if data["status"] == "pending":
             conn.execute(jobs.update().where(jobs.c.attempt_id == attempt_id).values(status="done"))
         event(conn, who.organization, attempt_id, "human_override", entry)
         return fetch(conn, attempt_id)
+
+
+@app.post("/api/v1/inspections/{attempt_id}/checks/{check_key}/review")
+def review_check(attempt_id: str, check_key: str, payload: CheckReview, who: Actor = Depends(actor)):
+    if who.role != "supervisor":
+        raise HTTPException(403, "Supervisor role required")
+    with transaction(who.organization) as conn:
+        row = fetch(conn, attempt_id, "attempt", lock=True)
+        data = row["data"]
+        if (
+            row["version"] != payload.expected_version
+            or data.get("superseded_by")
+            or data.get("overrides")
+            or data["status"] != "completed"
+            or data.get("packed_acknowledgement")
+        ):
+            raise HTTPException(409, "Current completed, unpacked capture without legacy reviews required")
+        original = next((c for c in data["result"]["checks"] if c["check_key"] == check_key), None)
+        if original is None:
+            raise HTTPException(404, "Check not found")
+        overrides = data.get("check_overrides", [])
+        previous = next(
+            (c["to_verdict"] for c in reversed(overrides) if c["check_key"] == check_key),
+            original["verdict"].lower(),
+        )
+        entry = {
+            "check_key": check_key,
+            "from_verdict": previous,
+            "to_verdict": payload.verdict,
+            "reason": payload.reason.strip(),
+            "by": who.operator,
+            "at": now().isoformat(),
+        }
+        updated = {**data, "check_overrides": [*overrides, entry]}
+        replace(conn, row, {**updated, "review_decision": effective_decision(updated)})
+        event(conn, who.organization, attempt_id, "check_override", entry)
+        return fetch(conn, attempt_id, "attempt")
 
 
 @app.get("/api/v1/inspections/{attempt_id}/events")
@@ -679,8 +731,65 @@ def export(attempt_id: str, who: Actor = Depends(actor)):
         "overrides": data["overrides"],
         "packed_acknowledgement": data.get("packed_acknowledgement"),
         "superseded_by": data["superseded_by"],
-        "compatibility": "Provisional; official schema not supplied",
+        "compatibility": "Legacy workspace export; use the contract 1.1 reader for eligible captures",
     }
+
+
+@app.get("/v1/records")
+def contract_records(
+    since: datetime | None = None,
+    agent: Literal["pack", "receiving", "prep", "returns"] = "pack",
+    cursor: str | None = Query(default=None, max_length=1024),
+    limit: int = Query(default=50, ge=1, le=100),
+    who: Actor = Depends(actor),
+):
+    from sqlalchemy import DateTime, and_, cast, or_, select
+
+    if since is not None and since.tzinfo is None:
+        raise HTTPException(422, "since must include a timezone")
+    after = None
+    if cursor:
+        try:
+            raw = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+            after = datetime.fromisoformat(raw["captured_at"])
+            after_id = str(raw["id"])
+            if after.tzinfo is None or not after_id:
+                raise ValueError()
+        except (ValueError, KeyError, TypeError):
+            raise HTTPException(422, "Invalid record cursor") from None
+    if agent != "pack":
+        return {"records": [], "next_cursor": None}
+    images = records.alias("capture_images")
+    captured_at = cast(images.c.data["captured_at"].as_string(), DateTime(timezone=True))
+    query = (
+        select(records.c.id, captured_at.label("captured_at"))
+        .join(images, records.c.data["image_id"].as_string() == images.c.id)
+        .where(
+            records.c.kind == "attempt",
+            images.c.kind == "image",
+            records.c.data["status"].as_string() != "draft",
+        )
+    )
+    if since is not None:
+        query = query.where(captured_at >= since)
+    if after is not None:
+        query = query.where(or_(captured_at > after, and_(captured_at == after, records.c.id > after_id)))
+    with transaction(who.organization) as conn:
+        rows = list(conn.execute(query.order_by(captured_at, records.c.id).limit(limit + 1)).mappings())
+    page = rows[:limit]
+    result = [contract_record(r["id"], who) for r in page]
+    next_cursor = None
+    if len(rows) > limit:
+        last = page[-1]
+        next_cursor = base64.urlsafe_b64encode(
+            json.dumps(
+                {
+                    "captured_at": last["captured_at"].astimezone(UTC).isoformat(),
+                    "id": last["id"],
+                }
+            ).encode()
+        ).decode()
+    return {"records": result, "next_cursor": next_cursor}
 
 
 @app.get("/v1/records/{record_id}")

@@ -130,11 +130,29 @@ function App() {
   const [preview, setPreview] = useState("");
   const [zoom, setZoom] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewCheck, setReviewCheck] = useState<string | null>(null);
   const current = attempt?.data;
+  const reviewedVerdicts = Object.fromEntries(
+    (current?.result?.checks || []).map((c: any) => [
+      c.check_key,
+      c.verdict.toLowerCase(),
+    ]),
+  );
+  for (const entry of current?.check_overrides || [])
+    reviewedVerdicts[entry.check_key] = entry.to_verdict;
+  const reviewedDecision = current?.check_overrides?.length
+    ? Object.values(reviewedVerdicts).includes("fail")
+      ? "stop_and_fix"
+      : Object.values(reviewedVerdicts).includes("uncertain")
+        ? "uncertain"
+        : "seal"
+    : current?.result?.decision;
   const exceptions = inspections.filter(
     (r) =>
       r.data.status === "pending" ||
-      ["uncertain", "stop_and_fix"].includes(r.data.result?.decision),
+      ["uncertain", "stop_and_fix"].includes(
+        r.data.review_decision || r.data.result?.decision,
+      ),
   );
   const refresh = () => cache.invalidateQueries();
   async function action(fn: () => Promise<void>) {
@@ -609,16 +627,14 @@ function App() {
                   <div className="eyebrow">INSPECTION DECISION</div>
                   {current ? (
                     <>
-                      <Badge
-                        value={current.result?.decision || current.status}
-                      />
+                      <Badge value={reviewedDecision || current.status} />
                       <p>
                         {current.reason ||
-                          (current.result?.decision === "seal"
+                          (reviewedDecision === "seal"
                             ? "All required checks pass under the capture protocol. Approval does not physically seal the box."
-                            : current.result?.decision === "stop_and_fix"
+                            : reviewedDecision === "stop_and_fix"
                               ? "A supported discrepancy needs correction. Keep unresolved checks in view."
-                              : current.result?.decision === "uncertain"
+                              : reviewedDecision === "uncertain"
                                 ? "Evidence is insufficient. Expose the unclear item or ask a supervisor."
                                 : "Evidence and processing status are saved with this attempt.")}
                       </p>
@@ -660,9 +676,13 @@ function App() {
                             disabled={
                               me?.role !== "supervisor" ||
                               ["running", "queued"].includes(current.status) ||
-                              !!current.superseded_by
+                              !!current.superseded_by ||
+                              !!current.check_overrides?.length
                             }
-                            onClick={() => setReviewOpen(true)}
+                            onClick={() => {
+                              setReviewCheck(null);
+                              setReviewOpen(true);
+                            }}
                           >
                             Supervisor review <ArrowUpRight size={16} />
                           </button>
@@ -730,7 +750,7 @@ function App() {
                       {!current.superseded_by &&
                         me?.role !== "demo" &&
                         (current.overrides?.at(-1)?.new_outcome ||
-                          current.result?.decision) === "seal" && (
+                          reviewedDecision) === "seal" && (
                           <button
                             className="secondary full"
                             disabled={busy || !!current.packed_acknowledgement}
@@ -800,9 +820,36 @@ function App() {
                           <p>{c.detail}</p>
                         </div>
                         <span className="mono">{c.verdict}</span>
+                        <button
+                          className="text-button"
+                          disabled={
+                            me?.role !== "supervisor" ||
+                            !!current.superseded_by ||
+                            !!current.overrides?.length ||
+                            !!current.packed_acknowledgement
+                          }
+                          onClick={() => {
+                            setReviewCheck(c.check_key);
+                            setReviewOpen(true);
+                          }}
+                        >
+                          Review {c.check_key.replaceAll("_", " ")}
+                        </button>
                       </div>
                     ))}
                   </div>
+                  {!!current.check_overrides?.length && (
+                    <div className="notice">
+                      <strong>Human check reviews</strong>
+                      {current.check_overrides.map((entry: any, i: number) => (
+                        <p key={i}>
+                          {entry.check_key.replaceAll("_", " ")}:{" "}
+                          {entry.from_verdict} → {entry.to_verdict}.{" "}
+                          {entry.reason} — {entry.by}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   <table>
                     <thead>
                       <tr>
@@ -1111,16 +1158,22 @@ function App() {
       {reviewOpen && attempt && (
         <Modal close={() => setReviewOpen(false)} label="Supervisor review">
           <ReviewModal
+            checkKey={reviewCheck}
             close={() => setReviewOpen(false)}
             save={async (decision, reason) => {
-              await api(`/inspections/${active}/review`, {
-                method: "POST",
-                body: JSON.stringify({
-                  expected_version: attempt.version,
-                  decision,
-                  reason,
-                }),
-              });
+              await api(
+                reviewCheck
+                  ? `/inspections/${active}/checks/${reviewCheck}/review`
+                  : `/inspections/${active}/review`,
+                {
+                  method: "POST",
+                  body: JSON.stringify({
+                    expected_version: attempt.version,
+                    ...(reviewCheck ? { verdict: decision } : { decision }),
+                    reason,
+                  }),
+                },
+              );
               setReviewOpen(false);
               await refresh();
             }}
@@ -1250,7 +1303,13 @@ function InspectionTable({
               </td>
               <td>{formatDate(r.created_at)}</td>
               <td>
-                <Badge value={r.data.result?.decision || r.data.status} />
+                <Badge
+                  value={
+                    r.data.review_decision ||
+                    r.data.result?.decision ||
+                    r.data.status
+                  }
+                />
               </td>
               <td>
                 <button
@@ -1503,9 +1562,11 @@ function FormModal({
 function ReviewModal({
   close,
   save,
+  checkKey,
 }: {
   close: () => void;
   save: (decision: string, reason: string) => Promise<void>;
+  checkKey?: string | null;
 }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -1535,11 +1596,17 @@ function ReviewModal({
         reason are saved separately.
       </p>
       <label>
-        Human decision
+        {checkKey
+          ? `Review: ${checkKey.replaceAll("_", " ")}`
+          : "Human decision"}
         <select name="decision">
           <option value="uncertain">Uncertain</option>
-          <option value="stop_and_fix">Stop & fix</option>
-          <option value="seal">Seal approved by human</option>
+          <option value={checkKey ? "fail" : "stop_and_fix"}>
+            {checkKey ? "Fail" : "Stop & fix"}
+          </option>
+          <option value={checkKey ? "pass" : "seal"}>
+            {checkKey ? "Pass confirmed by human" : "Seal approved by human"}
+          </option>
         </select>
       </label>
       <label>

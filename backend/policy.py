@@ -23,6 +23,24 @@ def digest(value):
     ).hexdigest()
 
 
+def effective_decision(data):
+    if data.get("overrides"):
+        return data["overrides"][-1]["new_outcome"]
+    result = data.get("result") or {}
+    if not data.get("check_overrides"):
+        return result.get("decision")
+    verdicts = {c["check_key"]: c["verdict"].lower() for c in result.get("checks", [])}
+    for entry in data["check_overrides"]:
+        verdicts[entry["check_key"]] = entry["to_verdict"]
+    return (
+        "stop_and_fix"
+        if "fail" in verdicts.values()
+        else "uncertain"
+        if "uncertain" in verdicts.values() or not verdicts
+        else "seal"
+    )
+
+
 def reconcile(lines, observation: VisionObservation, catalogue_skus, image_id):
     expected = {line["sku"]: line["quantity"] for line in lines}
     known = Counter()

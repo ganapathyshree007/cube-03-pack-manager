@@ -78,8 +78,31 @@ def test_rls_forced_and_no_role_bypass(context):
     assert client.get(f"/api/v1/images/{image['id']}").status_code == 404
     assert client.get(f"/api/v1/inspections/{attempt['id']}").status_code == 404
     assert client.get(f"/v1/records/{attempt['id']}").status_code == 404
+    assert client.get("/v1/records").json() == {"records": [], "next_cursor": None}
     with transaction(other.organization) as conn:
         assert conn.execute(records.select()).all() == []
+
+
+def test_contract_feed_pagination_capture_date_and_agent_filter(context):
+    client, org = context
+    expected = []
+    for index in range(2):
+        attempt, image = setup_attempt(client, unit=f"feed-{index}")
+        response = client.post(
+            f"/api/v1/inspections/{attempt['id']}/submit",
+            json={"image_id": image["id"]},
+            headers={"Idempotency-Key": f"feed-request-{index}"},
+        )
+        assert response.status_code == 202
+        expected.append(attempt["id"])
+    first = client.get("/v1/records", params={"limit": 1}).json()
+    second = client.get("/v1/records", params={"limit": 1, "cursor": first["next_cursor"]}).json()
+    assert [first["records"][0]["record_id"], second["records"][0]["record_id"]] == expected
+    assert second["next_cursor"] is None
+    assert client.get("/v1/records", params={"agent": "returns"}).json()["records"] == []
+    assert client.get("/v1/records", params={"since": "2099-01-01T00:00:00Z"}).json()["records"] == []
+    assert client.get("/v1/records", params={"since": "2026-01-01"}).status_code == 422
+    assert client.get("/v1/records", params={"cursor": "broken"}).status_code == 422
 
 
 def test_pending_idempotency_review_and_supersession(context):
@@ -155,6 +178,47 @@ def test_one_call_budget_survives_new_attempt(context, monkeypatch):
         assert row["status"] == ("completed" if index == 0 else "pending")
         if index == 0:
             assert row["result"]["decision"] == "seal"
+            contract_path = f"/v1/records/{attempt['id']}"
+            original = client.get(contract_path).json()
+            review_path = path + "/checks/quantities_correct/review"
+            version = client.get(path).json()["version"]
+            review_payload = {
+                "expected_version": version,
+                "verdict": "fail",
+                "reason": "Test-only supervisor count discrepancy",
+            }
+            reviewed = client.post(review_path, json=review_payload)
+            assert reviewed.status_code == 200, reviewed.text
+            assert client.post(review_path, json=review_payload).status_code == 409
+            updated = client.get(contract_path).json()
+            assert updated["content_hash"] == original["content_hash"]
+            assert updated["checks"] == original["checks"]
+            assert updated["overrides"][0]["from_verdict"] == "pass"
+            assert updated["overrides"][0]["to_verdict"] == "fail"
+            assert client.get("/api/v1/summary").json()["approved"] == 0
+            assert client.get("/api/v1/summary").json()["exceptions"] == 1
+            assert (
+                client.post(
+                    path + "/packed", json={"expected_version": reviewed.json()["version"]}
+                ).status_code
+                == 409
+            )
+            assert client.post(review_path, json={**review_payload, "reason": " " * 12}).status_code == 422
+            assert (
+                client.post(
+                    path + "/review",
+                    json={
+                        "expected_version": reviewed.json()["version"],
+                        "decision": "seal",
+                        "reason": "Cannot mix review semantics",
+                    },
+                ).status_code
+                == 409
+            )
+            other_role = Actor(org, "operator", "operator")
+            app.dependency_overrides[actor] = lambda: other_role
+            assert client.post(review_path, json=review_payload).status_code == 403
+            app.dependency_overrides[actor] = lambda: Actor(org, "test-supervisor", "supervisor")
         else:
             assert row["result"] is None
             assert "One-call budget" in row["reason"]

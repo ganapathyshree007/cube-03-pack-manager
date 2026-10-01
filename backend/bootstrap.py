@@ -22,7 +22,11 @@ def main():
                     sql.Literal(password)
                 )
             )
-        cursor.execute("GRANT CONNECT ON DATABASE pack TO pack_app")
+        cursor.execute("SELECT current_database()")
+        database_name = cursor.fetchone()[0]
+        cursor.execute(
+            sql.SQL("GRANT CONNECT ON DATABASE {} TO pack_app").format(sql.Identifier(database_name))
+        )
         cursor.execute("GRANT USAGE ON SCHEMA public TO pack_app")
     command.upgrade(Config("alembic.ini"), "head")
 
