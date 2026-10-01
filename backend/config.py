@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     model_provider: Literal["none", "ollama", "azure"] = "none"
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = ""
+    local_model_review_required: bool = True
     model_timeout_seconds: int = 45
     agent_mode: str = "batched"
     entra_tenant_id: str = ""

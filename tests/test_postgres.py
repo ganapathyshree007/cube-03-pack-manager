@@ -143,6 +143,47 @@ def test_pending_idempotency_review_and_supersession(context):
     assert client.get(path).json()["data"]["superseded_by"] == new["id"]
 
 
+def test_unvalidated_local_model_cannot_auto_approve(context, monkeypatch):
+    client, org = context
+    monkeypatch.setattr(settings(), "model_provider", "ollama")
+    monkeypatch.setattr(settings(), "ollama_model", "TEST-FIXTURE")
+    attempt, image = setup_attempt(client)
+    client.post(
+        f"/api/v1/inspections/{attempt['id']}/submit",
+        json={"image_id": image["id"]},
+        headers={"Idempotency-Key": str(uuid4())},
+    )
+    observation = VisionObservation(
+        instances=[
+            {
+                "instance_id": "fixture",
+                "candidates": ["TEST-A"],
+                "identity_verified": True,
+                "evidence": "Software fixture only",
+                "label_text": None,
+            }
+        ],
+        exact_count_known=True,
+        view_sufficient=True,
+        quality_notes="Fixture",
+        unresolved=[],
+    )
+    assert process_one(
+        org,
+        infer=lambda *args: (
+            observation,
+            {
+                "provider": "ollama",
+                "model_version": "TEST-FIXTURE",
+                "latency_ms": 0,
+            },
+        ),
+    )
+    result = client.get(f"/api/v1/inspections/{attempt['id']}").json()["data"]["result"]
+    assert result["decision"] == "uncertain"
+    assert any(c["check_key"] == "model_validation" and c["verdict"] == "UNCERTAIN" for c in result["checks"])
+
+
 def test_one_call_budget_survives_new_attempt(context, monkeypatch):
     client, org = context
     monkeypatch.setattr(settings(), "azure_openai_endpoint", "https://test.invalid")
@@ -176,7 +217,9 @@ def test_one_call_budget_survives_new_attempt(context, monkeypatch):
         )
         assert result.status_code == 202, result.text
         assert not process_one(org, infer=fake_infer, only_attempt_id="not-this-capture")
-        assert not process_one(org, infer=fake_infer, created_after=datetime.now(timezone.utc) + timedelta(days=1))
+        assert not process_one(
+            org, infer=fake_infer, created_after=datetime.now(timezone.utc) + timedelta(days=1)
+        )
         assert process_one(org, infer=fake_infer, only_attempt_id=attempt["id"])
         row = client.get(path).json()["data"]
         assert row["status"] == ("completed" if index == 0 else "pending")

@@ -141,6 +141,10 @@ def config():
         "schema": "provisional-0.1",
         "model_status": "Automatic inspections paused — worker not deployed"
         if not settings().worker_enabled
+        else "Experimental local model — human review required"
+        if settings().provider_configured
+        and settings().model_provider == "ollama"
+        and settings().local_model_review_required
         else "Configured, capability unverified"
         if settings().provider_configured
         else "Model not configured",

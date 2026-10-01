@@ -36,15 +36,17 @@ def test_local_vision_single_request(monkeypatch, failure):
         requests.append(request)
         payload = json.loads(request.content)
         assert payload["stream"] is False
+        assert "FINAL IMAGE" in payload["messages"][-1]["content"]
+        assert payload["format"]["$defs"]["Instance"]["properties"]["candidates"]["items"]["enum"] == ["A"]
         assert payload["format"]["additionalProperties"] is False
-        assert len(payload["messages"][1]["images"]) == 1
-        primary = Image.open(BytesIO(base64.b64decode(payload["messages"][1]["images"][0])))
-        reference = Image.open(BytesIO(base64.b64decode(payload["messages"][2]["images"][0])))
+        assert len(payload["messages"][-1]["images"]) == 1
+        primary = Image.open(BytesIO(base64.b64decode(payload["messages"][-1]["images"][0])))
+        reference = Image.open(BytesIO(base64.b64decode(payload["messages"][1]["images"][0])))
         assert primary.size == (1024, 853)
         assert reference.size == (1024, 1280)
         assert sum(len(message.get("images", [])) for message in payload["messages"]) == 2
-        assert "REFERENCE CATALOGUE ONLY" in payload["messages"][2]["content"]
-        assert "expected" not in payload["messages"][1]["content"].lower()
+        assert "REFERENCE CATALOGUE ONLY" in payload["messages"][1]["content"]
+        assert "expected" not in payload["messages"][-1]["content"].lower()
         if failure == "timeout":
             raise httpx.ReadTimeout("fixture timeout")
         content = json.dumps(

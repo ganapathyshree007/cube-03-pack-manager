@@ -42,10 +42,10 @@ The cutoff is a queue control, not a way to reset a unit's one-call reservation.
 ## Counting and identification
 
 One model request contains the primary counting photo, catalogue descriptions,
-and up to sixteen reference photos explicitly labelled as references. Expected order
+and up to twenty reference photos explicitly labelled as references. Expected order
 quantities are excluded. The model reports visible instances, possible identities,
 identity verification, counting uncertainty and visibility limitations.
-For local inference, the primary image is resized to a maximum edge of 1024 pixels. Up to sixteen references become a single labelled contact sheet with 240-pixel image tiles, preserving aspect ratio without cropping. Original evidence remains unchanged. This bounds input size but small labels can become harder to read; ambiguity must remain uncertain.
+For local inference, the primary image is resized to a maximum edge of 1024 pixels. Up to twenty references become a single labelled contact sheet with 240-pixel image tiles, preserving aspect ratio without cropping. Original evidence remains unchanged. This bounds input size but small labels can become harder to read; ambiguity must remain uncertain.
 
 Ordinary code derives per-SKU counts, compares the order, applies decision rules
 and stores evidence. Reference photos are never counted as box contents.
@@ -68,3 +68,7 @@ service or complete cloud deployment is claimed by this document.
 The project-local runtime uses Flash Attention and a q8_0 context cache to fit this laptop. The local request uses an 8192-token context and a 3000-token output cap. The primary view and catalogue sheet form two images in one request. These are engineering limits, not accuracy guarantees.
 
 Use the explicit `-instruct` tag. The bare `qwen3-vl:4b` tag resolved to a thinking model during testing and exhausted the output cap without a final answer, even when thinking was disabled in the request. No failing unit was retried.
+
+## Actual validation status — 1 October 2026
+
+Local requests run, but recognition accuracy FAILED the research checks. Keep `LOCAL_MODEL_REVIEW_REQUIRED=true`: local results cannot automatically authorize sealing. See [LOCAL_MODEL_RESULTS.md](LOCAL_MODEL_RESULTS.md). The worker is experimental; do not describe it as validated product counting.

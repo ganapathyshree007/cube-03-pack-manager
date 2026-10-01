@@ -117,6 +117,18 @@ def process_one(org, infer=provider.inspect, *, only_attempt_id=None, created_af
         result = reconcile(
             data["order_snapshot"]["lines"], observation, {p["sku"] for p in catalogue}, data["image_id"]
         )
+        if provenance.get("provider") == "ollama" and settings().local_model_review_required:
+            result["checks"].append(
+                {
+                    "check_key": "model_validation",
+                    "verdict": "UNCERTAIN",
+                    "confidence": None,
+                    "detail": "Experimental local model: recognition accuracy is not validated. Human review required.",
+                    "image_ids": [data["image_id"]],
+                }
+            )
+            if result["decision"] == "seal":
+                result["decision"] = "uncertain"
         for check in result["checks"]:
             check.update(model_version=provenance["model_version"], latency_ms=provenance["latency_ms"])
         result.update(

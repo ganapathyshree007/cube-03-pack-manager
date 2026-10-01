@@ -1,4 +1,8 @@
-# Verification report — 30 September 2026
+# Verification report â€” 30 September 2026
+
+Current update: 87 backend tests passed together, plus the added local-model mandatory-review test passed separately (88 tests total). Six browser tests and the frontend production build passed. Actual inference attempts and failures are documented in [LOCAL_MODEL_RESULTS.md](docs/LOCAL_MODEL_RESULTS.md); software tests do not establish vision accuracy.
+
+Earlier verification history follows.
 
 Latest local verification: **76 backend tests passed** with PostgreSQL enabled, **5 browser tests passed**, frontend production build passed, and Ruff passed. Added coverage: research manifest validation and split leakage, mocked private Supabase storage, independent presence/quantity registry checks, strict contract 1.1 serialization and tenant-denied access, deferred worker behavior, public landing page accessibility and mobile width. Original Drive product data and RPC research photographs were not used as synthetic test labels. No real model inference or full contract lifecycle validation has occurred. Render project container exists; service/database deployment is not verified.
 

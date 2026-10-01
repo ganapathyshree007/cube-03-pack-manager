@@ -4,6 +4,8 @@
 
 Built in the supplied fork. The original problem statement is preserved in [docs/STARTER_README.md](docs/STARTER_README.md). RULES.md is unchanged.
 
+**Current validation:** local model inference runs, but research tests did not establish correct product identification or counting. Local-model results require human review. See [actual test results](docs/LOCAL_MODEL_RESULTS.md).
+
 ## Implemented scope
 
 - React/TypeScript workspace: catalogue/reference photos, orders/CSV import, capture, results, history, retake, supervisor review and JSON export.
