@@ -23,6 +23,24 @@ This is not an autonomous multi-tool LLM agent. The participant explicitly selec
 
 ## Start locally
 
+### Integrated operations frontend (5 October, post-competition)
+
+The new local operations interface is connected to the integrated API: searchable workflows, route-specific timelines, private evidence upload, attributed manual review and saved history. Automatic visual inspection remains **BLOCKED**. This does not establish product recognition/counting accuracy.
+
+Start PostgreSQL, the integrated API on **8010**, and its worker using [the local backend instructions](docs/INTEGRATED_LOCAL.md). Then:
+
+```powershell
+cd C:\SYDON\cube-03-pack-manager\frontend
+npm ci
+npm run dev -- --port 5173
+```
+
+Open **http://127.0.0.1:5173/operations.html**. Select the ignored `.local/integrated-client.json` using **Local account file**; it is read locally and the token authenticates requests to the loopback API. Tokens stay in memory unless you explicitly choose tab-session persistence. Never copy this file into source or build settings.
+
+`INTEGRATED_API_TARGET` in frontend local configuration defaults to `http://127.0.0.1:8010`; it is a server-side Vite proxy setting, restricted to loopback. No cloud credentials are required. All five managers share one PostgreSQL database; `cw_runs` stores their separate outputs and `cw_events` stores the audit trail. Images use authorized local file storage with database metadata.
+
+Verified: **138 backend tests, 12 browser tests, frontend build and Ruff passed**. The browser suite includes a real local API upload/review/refresh flow and clearly labelled UI fixtures. See [frontend endpoints, verification and limitations](docs/OPERATIONS_FRONTEND.md). The original Pack interface is preserved separately.
+
 Use Docker Desktop (Linux engine), Python 3.12 and Node 24. Versions are locked in uv.lock, requirements.lock and frontend/package-lock.json.
 
 ```powershell

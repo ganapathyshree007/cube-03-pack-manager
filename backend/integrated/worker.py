@@ -48,16 +48,23 @@ def record_failure(conn, actor, run, code, dispatched=False):
     return updated
 
 
+def retry_blocker(conn, workflow, run):
+    if workflow["data"]["state"] != "active" or run["state"] != "retryable":
+        return "RETRY_NOT_ALLOWED"
+    if rows(conn, calls, run_id=run["id"]) or run["retries"] >= MAX_RETRIES:
+        return "RETRY_BUDGET_EXHAUSTED"
+    if run["retry_at"] and run["retry_at"] > now():
+        return "RETRY_BACKOFF"
+    return None
+
+
 def retry(conn, actor, run_id):
     initial = get(conn, runs, run_id)
     workflow = get(conn, workflows, initial["workflow_id"], True)
     run = get(conn, runs, run_id, True)
-    if workflow["data"]["state"] != "active" or run["state"] != "retryable":
-        fail("RETRY_NOT_ALLOWED")
-    if rows(conn, calls, run_id=run_id) or run["retries"] >= MAX_RETRIES:
-        fail("RETRY_BUDGET_EXHAUSTED")
-    if run["retry_at"] and run["retry_at"] > now():
-        fail("RETRY_BACKOFF")
+    error = retry_blocker(conn, workflow, run)
+    if error:
+        fail(error)
     updated = change(conn, runs, run, state="queued", retries=run["retries"] + 1, retry_at=None)
     log(conn, actor, workflow, "retry_queued", {"count": updated["retries"]}, run_id)
     return updated

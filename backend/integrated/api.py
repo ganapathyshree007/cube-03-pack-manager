@@ -107,6 +107,76 @@ def health():
     return {"status": "ok", "mode": "local-only", "automatic_inference": "blocked"}
 
 
+@app.get("/v1/session")
+def session(a=Depends(actor)):
+    from .contracts import CHECKS
+
+    return {
+        "operator": a.operator,
+        "organization": a.organization,
+        "role": a.role,
+        "can_write": a.role in {"operator", "supervisor"},
+        "inference": "blocked",
+        "checks": {k: sorted(v) for k, v in CHECKS.items()},
+        "upload_limits": {"max_bytes": storage.MAX_BYTES, "min_dimension": 64, "max_pixels": 20000000},
+    }
+
+
+@app.get("/v1/workflows/{workflow_id}/context")
+def workflow_context(workflow_id: str, a=Depends(actor)):
+    from .worker import retry_blocker
+
+    def permission(code):
+        return {"allowed": code is None, "reason": code}
+
+    with transaction(a.organization) as conn:
+        workflow = svc.get(conn, workflows, workflow_id)
+        stage_runs = svc.rows(conn, runs, workflow_id=workflow_id)
+        active = workflow["data"]["state"] == "active"
+        admin = a.role == "supervisor"
+        write = a.role in {"operator", "supervisor"}
+        images = [
+            {"id": r["id"], **{k: r["data"][k] for k in ["bytes", "dimensions", "taken_at"]}}
+            for r in svc.rows(conn, records, kind="integrated_image")
+            if r["data"]["workflow_id"] == workflow_id
+        ]
+        route_ok = workflow["data"]["route"] == "unknown" and not any(
+            r["manager"] in {"prep", "pack"} for r in stage_runs
+        )
+        actions = {
+            k: permission("SUPERVISOR_REQUIRED" if not admin else None if ok else "INVALID_TRANSITION")
+            for k, ok in {
+                "hold": active,
+                "cancel": workflow["data"]["state"] != "cancelled",
+                "resume": workflow["data"]["state"] == "held",
+                "route": active and route_ok,
+            }.items()
+        }
+        for key in ["upload", "event"]:
+            actions[key] = permission("FORBIDDEN" if not write else None if active else "WORKFLOW_NOT_ACTIVE")
+        return {
+            "workflow": {
+                **workflow,
+                "runs": stage_runs,
+                "events": svc.rows(conn, audit, workflow_id=workflow_id),
+            },
+            "unit": svc.get(conn, units, workflow["unit_id"]),
+            "images": images,
+            "actions": actions,
+            "run_actions": {
+                r["id"]: {
+                    "review": permission(
+                        "SUPERVISOR_REQUIRED" if not admin else svc.review_blocker(conn, workflow, r)
+                    ),
+                    "retry": permission(
+                        "SUPERVISOR_REQUIRED" if not admin else retry_blocker(conn, workflow, r)
+                    ),
+                }
+                for r in stage_runs
+            },
+        }
+
+
 @app.get("/ready")
 def ready():
     local_guard()

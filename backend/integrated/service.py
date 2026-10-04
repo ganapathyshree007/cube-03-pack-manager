@@ -211,17 +211,21 @@ def route_next(conn, actor, workflow):
     enqueue(conn, actor, workflow, manager, "inbound_route")
 
 
+def review_blocker(conn, workflow, run):
+    if workflow["data"]["state"] != "active" or run["state"] in {"running", "queued", "cancelled"}:
+        return "REVIEW_NOT_ALLOWED"
+    if run["manager"] == "recovery":
+        return "CLAIM_REVIEW_NOT_IMPLEMENTED"
+    return prerequisite(conn, workflow, run["manager"])
+
+
 def review(conn, actor, run_id, payload):
     initial = get(conn, runs, run_id)
     workflow = get(conn, workflows, initial["workflow_id"], True)
     run = get(conn, runs, run_id, True)
     if run["version"] != payload["expected_version"]:
         fail("STALE_REVIEW")
-    if workflow["data"]["state"] != "active" or run["state"] in {"running", "queued", "cancelled"}:
-        fail("REVIEW_NOT_ALLOWED")
-    if run["manager"] == "recovery":
-        fail("CLAIM_REVIEW_NOT_IMPLEMENTED")
-    error = prerequisite(conn, workflow, run["manager"])
+    error = review_blocker(conn, workflow, run)
     if error:
         fail(error)
     from datetime import datetime
