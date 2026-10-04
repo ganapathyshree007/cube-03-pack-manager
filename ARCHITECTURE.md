@@ -1,5 +1,7 @@
 # Architecture
 
+The post-competition local integration is documented in [INTEGRATED_LOCAL.md](docs/INTEGRATED_LOCAL.md), including its branched graph, schema, manager boundaries and failure policies. It runs separately on port 8010 and shares the existing local PostgreSQL database. The architecture below describes the preserved Pack application; it is not a claim that every integrated manager has an automatic model implementation.
+
 Bounded catalogue, open box, exposed items. The target is merchant-fulfilled sellers and 3PLs, not fully FBA sellers. Hidden contents and arbitrary merchandise recognition are outside the supported claim.
 
 ```mermaid

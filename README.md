@@ -4,7 +4,9 @@
 
 Built in the supplied fork. The original problem statement is preserved in [docs/STARTER_README.md](docs/STARTER_README.md). RULES.md is unchanged.
 
-**Post-competition continuation:** this branch is `post-competition/completion-audit`. Original Round 2 snapshot `1e503a0` remains on `main`. The handbook/RULES deadline is 1 October 18:00 IST; the participant reports a portal deadline of 23:59 IST. No extension document has been verified. Do not present these changes as the original submission.
+**Post-competition continuation:** integrated local work is on `post-competition/integrated-local-backend`, starting from `b10e2c3`. Original Round 2 snapshot `1e503a0` remains preserved in history; it is not the current main HEAD. The handbook/RULES deadline is 1 October 18:00 IST; the participant reports a portal deadline of 23:59 IST. No extension document has been verified. Do not present these changes as the original submission.
+
+**Integrated local backend (4 October):** a separate loopback API combines Receiving → Prep **or** Pack, plus explicit Returns and Recovery events. PostgreSQL stores durable runs, local evidence, attributed manual reviews and failure recovery. Automatic visual adapters are BLOCKED; the working demonstration uses clearly labelled manual software fixtures, not live AI. Recovery gathers evidence but cannot approve or submit a claim. No cloud deployment or inference is used by this service. See [local run/API instructions](docs/INTEGRATED_LOCAL.md), [source comparison](docs/INTEGRATION_COMPARISON.md), and [verification report](docs/INTEGRATED_VERIFICATION.md). The existing Pack website and experimental adapter are preserved separately.
 
 **Current validation:** local model inference runs, but research tests did not establish correct product identification or counting. Local-model results require human review. See [actual test results](docs/LOCAL_MODEL_RESULTS.md).
 
