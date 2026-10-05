@@ -1,7 +1,44 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+test("hosted auth fixture: development tokens unavailable and invalid sign-in stays signed out", async ({
+  page,
+}) => {
+  await page.route("**/operations-config", (route) =>
+    route.fulfill({
+      json: {
+        mode: "hosted",
+        supabase_url: "https://fixture.supabase.co",
+        publishable_key: "public-fixture",
+      },
+    }),
+  );
+  await page.route("https://fixture.supabase.co/**", (route) =>
+    route.fulfill({
+      status: 400,
+      json: {
+        error: "invalid_grant",
+        error_description: "Invalid credentials",
+      },
+    }),
+  );
+  await page.goto("/operations.html");
+  await expect(
+    page.getByRole("heading", { name: "Sign in to your workspace" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Development token")).toHaveCount(0);
+  await page.getByLabel("Email", { exact: true }).fill("fixture@example.test");
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("test-only-not-a-real-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("alert")).toContainText("Sign-in failed");
+  await expect(
+    page.getByRole("heading", { name: "A clearer view of every unit." }),
+  ).toHaveCount(0);
+});
 test.use({
-  baseURL: "http://127.0.0.1:5173",
+  baseURL: process.env.OPERATIONS_TEST_BASE_URL || "http://127.0.0.1:5173",
   trace: "off",
   timezoneId: "Asia/Kolkata",
 });
@@ -10,6 +47,17 @@ test("real local backend: persisted workflow, private upload, human review, refr
   page,
   request,
 }) => {
+  const externalRequests: string[] = [];
+  if (process.env.OPERATIONS_TEST_BASE_URL) {
+    await page.context().route("**/*", (route) => {
+      const hostname = new URL(route.request().url()).hostname;
+      if (!["127.0.0.1", "localhost"].includes(hostname)) {
+        externalRequests.push(hostname);
+        return route.abort();
+      }
+      return route.continue();
+    });
+  }
   await page.goto("/operations.html");
   await page.getByLabel("Keep this session in this browser tab").check();
   await page
@@ -130,7 +178,10 @@ test("real local backend: persisted workflow, private upload, human review, refr
   expect(
     (
       await request.get(
-        "http://127.0.0.1:8010/v1/images/" +
+        (process.env.OPERATIONS_TEST_BASE_URL
+          ? process.env.OPERATIONS_TEST_BASE_URL + "/operations-api"
+          : "http://127.0.0.1:8010") +
+          "/v1/images/" +
           imageId!.replace("Saved evidence ", ""),
       )
     ).status(),
@@ -177,6 +228,7 @@ test("real local backend: persisted workflow, private upload, human review, refr
     path: "../.local/qa/operations-overview-desktop.png",
     fullPage: true,
   });
+  expect(externalRequests).toEqual([]);
 });
 
 test("UI fixture: empty state, keyboard navigation and accessible connection screen", async ({
@@ -394,6 +446,27 @@ test("UI fixture: FBA timeline, absent Pack, original review, image denial and s
     page.locator(".run-card").getByText("Needs review", { exact: true }),
   ).toBeVisible();
   await expect(page.locator(".evidence-photo")).toContainText("AUTH_REQUIRED");
+  // Explicit fixture transitions must be the only source of processing animation.
+  run.state = "running";
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(
+    page.getByText("Prep is processing saved evidence", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".is-processing")).toHaveCount(1);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.locator(".is-processing .stage-number")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  run.state = "completed";
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(page.locator(".is-processing")).toHaveCount(0);
+  run.state = "review_needed";
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(
+    page.locator(".run-card").getByText("Needs review", { exact: true }),
+  ).toBeVisible();
+
   await page.getByText("Original saved findings", { exact: true }).click();
   await expect(
     page

@@ -1,0 +1,39 @@
+# Separate opt-in integration preview. No paid worker, no automatic inference.
+services:
+  - type: web
+    name: cube-commerce-operations
+    runtime: docker
+    region: singapore
+    plan: free
+    branch: post-competition/integrated-local-backend
+    autoDeployTrigger: off
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m backend.integrated.host_service
+    healthCheckPath: /operations-api/ready
+    envVars:
+      - key: INTEGRATED_MODE
+        value: hosted
+      - key: INTEGRATED_SYNTHETIC_ONLY
+        value: "true"
+      - key: AUTH_MODE
+        value: supabase
+      - key: STORAGE_MODE
+        value: supabase
+      - key: MODEL_PROVIDER
+        value: none
+      - key: WORKER_ENABLED
+        value: "false"
+      - key: DEMO_ENABLED
+        value: "false"
+      - key: DATABASE_URL
+        sync: false
+      - key: PACK_ORGANIZATION
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: evidence

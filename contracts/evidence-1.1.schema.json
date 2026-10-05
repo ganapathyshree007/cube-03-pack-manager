@@ -1,0 +1,383 @@
+{
+  "$defs": {
+    "Check": {
+      "additionalProperties": false,
+      "properties": {
+        "check_key": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Check Key",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "uncertain"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Confidence"
+        },
+        "detail": {
+          "additionalProperties": true,
+          "title": "Detail",
+          "type": "object"
+        },
+        "model_version": {
+          "title": "Model Version",
+          "type": "string"
+        },
+        "latency_ms": {
+          "minimum": 0,
+          "title": "Latency Ms",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "check_key",
+        "verdict",
+        "confidence",
+        "detail",
+        "model_version",
+        "latency_ms"
+      ],
+      "title": "Check",
+      "type": "object"
+    },
+    "EvidenceImage": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "bytes": {
+          "minimum": 0,
+          "title": "Bytes",
+          "type": "integer"
+        },
+        "taken_at": {
+          "format": "date-time",
+          "title": "Taken At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "sha256",
+        "bytes",
+        "taken_at"
+      ],
+      "title": "EvidenceImage",
+      "type": "object"
+    },
+    "Outcome": {
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "title": "Decision",
+          "type": "string"
+        },
+        "decided_by": {
+          "enum": [
+            "agent",
+            "operator"
+          ],
+          "title": "Decided By",
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "decision",
+        "decided_by",
+        "decided_at"
+      ],
+      "title": "Outcome",
+      "type": "object"
+    },
+    "Override": {
+      "additionalProperties": false,
+      "properties": {
+        "check_key": {
+          "title": "Check Key",
+          "type": "string"
+        },
+        "from_verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "uncertain"
+          ],
+          "title": "From Verdict",
+          "type": "string"
+        },
+        "to_verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "uncertain"
+          ],
+          "title": "To Verdict",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "by": {
+          "title": "By",
+          "type": "string"
+        },
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_key",
+        "from_verdict",
+        "to_verdict",
+        "reason",
+        "by",
+        "at"
+      ],
+      "title": "Override",
+      "type": "object"
+    },
+    "SharedSubject": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": [
+            "unit",
+            "order",
+            "carton"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "asin": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asin"
+        },
+        "sku": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sku"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Order Id"
+        },
+        "po_line_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Po Line Id"
+        },
+        "shipment_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shipment Id"
+        },
+        "quantity_expected": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Quantity Expected"
+        },
+        "quantity_observed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Quantity Observed"
+        }
+      },
+      "required": [
+        "type",
+        "order_id",
+        "quantity_expected",
+        "quantity_observed"
+      ],
+      "title": "SharedSubject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "record_id": {
+      "format": "uuid",
+      "title": "Record Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.1",
+      "default": "1.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "organization_id": {
+      "format": "uuid",
+      "title": "Organization Id",
+      "type": "string"
+    },
+    "client_id": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Client Id"
+    },
+    "agent": {
+      "enum": [
+        "receiving",
+        "prep",
+        "pack",
+        "returns"
+      ],
+      "title": "Agent",
+      "type": "string"
+    },
+    "subject": {
+      "$ref": "#/$defs/SharedSubject"
+    },
+    "captured_at": {
+      "format": "date-time",
+      "title": "Captured At",
+      "type": "string"
+    },
+    "operator_label": {
+      "title": "Operator Label",
+      "type": "string"
+    },
+    "images": {
+      "items": {
+        "$ref": "#/$defs/EvidenceImage"
+      },
+      "title": "Images",
+      "type": "array"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/Check"
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "outcome": {
+      "$ref": "#/$defs/Outcome"
+    },
+    "overrides": {
+      "items": {
+        "$ref": "#/$defs/Override"
+      },
+      "title": "Overrides",
+      "type": "array"
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "pending",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "content_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Content Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "record_id",
+    "organization_id",
+    "agent",
+    "subject",
+    "captured_at",
+    "operator_label",
+    "images",
+    "checks",
+    "outcome",
+    "overrides",
+    "status",
+    "content_hash"
+  ],
+  "title": "SharedEvidence",
+  "type": "object"
+}

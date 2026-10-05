@@ -1,0 +1,169 @@
+{
+  "$defs": {
+    "ObservedItem": {
+      "additionalProperties": false,
+      "properties": {
+        "sku": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sku"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Count"
+        },
+        "source_image": {
+          "title": "Source Image",
+          "type": "string"
+        },
+        "visible_attributes": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "title": "Visible Attributes",
+          "type": "array"
+        },
+        "ambiguity": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ambiguity"
+        },
+        "occlusion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Occlusion"
+        }
+      },
+      "required": [
+        "sku",
+        "count",
+        "source_image",
+        "visible_attributes",
+        "ambiguity",
+        "occlusion"
+      ],
+      "title": "ObservedItem",
+      "type": "object"
+    },
+    "VisualCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "result": {
+          "enum": [
+            "observed",
+            "not_observed",
+            "unresolved"
+          ],
+          "title": "Result",
+          "type": "string"
+        },
+        "detail": {
+          "maxLength": 2000,
+          "minLength": 5,
+          "title": "Detail",
+          "type": "string"
+        },
+        "source_image": {
+          "title": "Source Image",
+          "type": "string"
+        }
+      },
+      "required": [
+        "key",
+        "result",
+        "detail",
+        "source_image"
+      ],
+      "title": "VisualCheck",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "manager": {
+      "enum": [
+        "receiving",
+        "prep",
+        "pack",
+        "returns"
+      ],
+      "title": "Manager",
+      "type": "string"
+    },
+    "scene_id": {
+      "title": "Scene Id",
+      "type": "string"
+    },
+    "scene_complete": {
+      "title": "Scene Complete",
+      "type": "boolean"
+    },
+    "items": {
+      "items": {
+        "$ref": "#/$defs/ObservedItem"
+      },
+      "maxItems": 100,
+      "title": "Items",
+      "type": "array"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/VisualCheck"
+      },
+      "maxItems": 12,
+      "title": "Checks",
+      "type": "array"
+    },
+    "limitations": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 20,
+      "title": "Limitations",
+      "type": "array"
+    }
+  },
+  "required": [
+    "manager",
+    "scene_id",
+    "scene_complete",
+    "items",
+    "checks",
+    "limitations"
+  ],
+  "title": "Observation",
+  "type": "object"
+}

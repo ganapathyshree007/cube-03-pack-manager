@@ -1,5 +1,9 @@
 # Pack Manager
 
+**Offline local website:** run `.\scripts\start-operations-offline.ps1` from this repository and open http://127.0.0.1:8013/. It serves the built UI, API and durable worker without Vite or cloud services. Existing local database/accounts are preserved; automatic vision remains unavailable. See [offline launch and verification](docs/OFFLINE_OPERATIONS.md).
+
+**Round 3 continuation (5 October):** the participant supplied an organiser email describing the 5–9 October integration sprint, synthetic-only data and submission by 9 October 11:59 PM. The exact Pod repository and inference/evaluation rules remain missing. See [Round 3 readiness and deployment runbook](docs/ROUND3_READINESS.md) and [provisional team contracts](contracts/README.md). The integrated UI now shows actual processing states and has an opt-in hosted-auth configuration; deployment and automatic vision are still unverified. Local mode remains available.
+
 **Order verification before sealing.** A constrained AI inspection workflow for merchant-fulfilled sellers and 3PL pack stations. One model call observes an open box; ordinary code compares supported identities/counts with the saved order. Unclear evidence remains UNCERTAIN, discrepancies STOP & FIX, and errors save a pending record without AI permission to seal.
 
 Built in the supplied fork. The original problem statement is preserved in [docs/STARTER_README.md](docs/STARTER_README.md). RULES.md is unchanged.

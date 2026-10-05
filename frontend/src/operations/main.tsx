@@ -40,6 +40,7 @@ import {
   type Permission,
 } from "./api";
 import "./operations.css";
+import { HostedLogin, hostedSignOut, useRuntime } from "./hosted";
 
 const managers: Manager[] = [
   "receiving",
@@ -1042,7 +1043,11 @@ function WorkflowDetail({
     queryKey: ["context", id],
     queryFn: () =>
       api.get<Context>("/v1/workflows/" + encodeURIComponent(id) + "/context"),
-    refetchInterval: action ? false : 5000,
+    refetchInterval: (q) =>
+      action
+        ? false
+        : Math.min(30000, 5000 * 2 ** Math.min(q.state.fetchFailureCount, 3)),
+    refetchIntervalInBackground: false,
   });
   const refresh = () => {
     void query.refetch();
@@ -1160,7 +1165,21 @@ function WorkflowDetail({
             {managers.map((manager, index) => {
               const stage = workflow.runs.filter((r) => r.manager === manager);
               return (
-                <section className="timeline-stage" key={manager}>
+                <section
+                  className={
+                    "timeline-stage" +
+                    (!query.error && stage.some((r) => r.state === "running")
+                      ? " is-processing"
+                      : "")
+                  }
+                  key={manager}
+                  aria-label={label(manager) + " stage"}
+                >
+                  {!query.error && stage.some((r) => r.state === "running") && (
+                    <p className="processing-label" role="status">
+                      {label(manager)} is processing saved evidence
+                    </p>
+                  )}
                   <span className="stage-number" aria-hidden="true">
                     {String(index + 1).padStart(2, "0")}
                   </span>
@@ -1574,15 +1593,15 @@ function Workspace({
           </button>
         </nav>
         <div className="sidebar-bottom">
-          <span className="local-dot" /> LOCAL WORKSPACE
+          <span className="local-dot" /> OPERATIONS WORKSPACE
           <p>Evidence before decisions.</p>
-          <small>Connected through your local API. No cloud services.</small>
+          <small>Connected to your authenticated workspace.</small>
         </div>
       </aside>
       <div className="main-shell">
         <header className="topbar">
           <span>
-            Commerce operations <span className="muted">/ Local</span>
+            Commerce operations <span className="muted">/ Evidence</span>
           </span>
           <div>
             <span className="operator">
@@ -1917,7 +1936,7 @@ function Workspace({
             </>
           )}
           <footer>
-            Local evidence workspace{" "}
+            Evidence workspace{" "}
             <span>
               Human decisions stay attributed. Uncertainty stays visible.
             </span>
@@ -1957,7 +1976,17 @@ function Root() {
     api: OperationsApi;
     session: Session;
   } | null>(null);
-  if (!["localhost", "127.0.0.1", "[::1]"].includes(location.hostname))
+  const runtime = useRuntime();
+  if (runtime.loading)
+    return (
+      <main>
+        <p role="status">Checking workspace configuration�</p>
+      </main>
+    );
+  if (
+    runtime.mode !== "hosted" &&
+    !["localhost", "127.0.0.1", "[::1]"].includes(location.hostname)
+  )
     return (
       <main>
         <h1>Local workspace only</h1>
@@ -1969,10 +1998,19 @@ function Root() {
   return connection ? (
     <Connected
       {...connection}
-      onDisconnect={() => {
+      onDisconnect={async () => {
         sessionStorage.removeItem("cube-local-token");
-        setConnection(null);
+        try {
+          await hostedSignOut();
+        } finally {
+          setConnection(null);
+        }
       }}
+    />
+  ) : runtime.mode === "hosted" ? (
+    <HostedLogin
+      config={runtime}
+      onConnect={(api, session) => setConnection({ api, session })}
     />
   ) : (
     <Login onConnect={(api, session) => setConnection({ api, session })} />

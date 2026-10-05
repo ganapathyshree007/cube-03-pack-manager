@@ -1,0 +1,82 @@
+{
+  "$defs": {
+    "CatalogueEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "sku": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Sku",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 1000,
+          "minLength": 5,
+          "title": "Description",
+          "type": "string"
+        },
+        "reference_id": {
+          "maxLength": 120,
+          "minLength": 1,
+          "title": "Reference Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sku",
+        "description",
+        "reference_id"
+      ],
+      "title": "CatalogueEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "manager": {
+      "enum": [
+        "receiving",
+        "prep",
+        "pack",
+        "returns"
+      ],
+      "title": "Manager",
+      "type": "string"
+    },
+    "unit_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Unit Id",
+      "type": "string"
+    },
+    "scene_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Scene Id",
+      "type": "string"
+    },
+    "catalogue": {
+      "items": {
+        "$ref": "#/$defs/CatalogueEntry"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "title": "Catalogue",
+      "type": "array"
+    },
+    "synthetic": {
+      "const": true,
+      "title": "Synthetic",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "manager",
+    "unit_id",
+    "scene_id",
+    "catalogue",
+    "synthetic"
+  ],
+  "title": "VisionInput",
+  "type": "object"
+}

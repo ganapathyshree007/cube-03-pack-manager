@@ -1,0 +1,126 @@
+{
+  "$defs": {
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "check_key": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Check Key",
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "uncertain"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        },
+        "detail": {
+          "maxLength": 2000,
+          "minLength": 10,
+          "title": "Detail",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_key",
+        "verdict",
+        "detail"
+      ],
+      "title": "Finding",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "integrated.v1",
+      "default": "integrated.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "manager": {
+      "enum": [
+        "receiving",
+        "prep",
+        "pack",
+        "returns",
+        "recovery"
+      ],
+      "title": "Manager",
+      "type": "string"
+    },
+    "manager_version": {
+      "const": "local-boundary-1",
+      "default": "local-boundary-1",
+      "title": "Manager Version",
+      "type": "string"
+    },
+    "unit_id": {
+      "title": "Unit Id",
+      "type": "string"
+    },
+    "order_id": {
+      "title": "Order Id",
+      "type": "string"
+    },
+    "basis": {
+      "enum": [
+        "human",
+        "fixture_human",
+        "deterministic_evidence_review"
+      ],
+      "title": "Basis",
+      "type": "string"
+    },
+    "verdict": {
+      "title": "Verdict",
+      "type": "string"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "image_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Image Ids",
+      "type": "array"
+    },
+    "evidence_run_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Run Ids",
+      "type": "array"
+    },
+    "source_payload": {
+      "additionalProperties": true,
+      "title": "Source Payload",
+      "type": "object"
+    },
+    "claim_supported": {
+      "const": false,
+      "default": false,
+      "title": "Claim Supported",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "manager",
+    "unit_id",
+    "order_id",
+    "basis",
+    "verdict",
+    "findings",
+    "image_ids"
+  ],
+  "title": "RunOutput",
+  "type": "object"
+}

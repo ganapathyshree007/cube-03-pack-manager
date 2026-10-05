@@ -157,6 +157,7 @@ export class ApiError extends Error {
 }
 
 export class OperationsApi {
+  tokenProvider?: () => Promise<string>;
   private keys = new Map<string, string>();
   private inFlight = new Set<string>();
   constructor(
@@ -229,7 +230,12 @@ export class OperationsApi {
           ...init,
           credentials: "omit",
           signal: controller.signal,
-          headers: { ...init.headers, Authorization: "Bearer " + this.token },
+          headers: {
+            ...init.headers,
+            Authorization:
+              "Bearer " +
+              (this.tokenProvider ? await this.tokenProvider() : this.token),
+          },
         }),
       );
       return await parse(response);
@@ -285,6 +291,13 @@ export class OperationsApi {
     const key = this.keys.get(fingerprint) || crypto.randomUUID();
     this.keys.set(fingerprint, key);
     this.inFlight.add(fingerprint);
+    let authToken: string;
+    try {
+      authToken = this.tokenProvider ? await this.tokenProvider() : this.token;
+    } catch (error) {
+      this.inFlight.delete(fingerprint);
+      throw error;
+    }
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open(
@@ -294,7 +307,7 @@ export class OperationsApi {
           encodeURIComponent(workflowId) +
           "/images",
       );
-      xhr.setRequestHeader("Authorization", "Bearer " + this.token);
+      xhr.setRequestHeader("Authorization", "Bearer " + authToken);
       xhr.setRequestHeader("Idempotency-Key", key);
       xhr.timeout = this.timeoutMs;
       const finish = () => this.inFlight.delete(fingerprint);

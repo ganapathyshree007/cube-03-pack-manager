@@ -1202,3 +1202,32 @@ legend {
     scroll-behavior: auto !important;
   }
 }
+
+/* Only persisted running state activates this indicator; no inferred progress. */
+.timeline-stage.is-processing {
+  border-left: 3px solid #147267;
+  background: #eff8f5;
+  border-radius: 10px;
+  padding: 12px;
+}
+.processing-label {
+  grid-column: 1 / -1;
+  color: #12594f;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+.is-processing .stage-number {
+  background: #147267;
+  color: white;
+  animation: processing-pulse 1.8s ease-in-out infinite;
+}
+@keyframes processing-pulse {
+  50% {
+    box-shadow: 0 0 0 6px #14726722;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-processing .stage-number {
+    animation: none;
+  }
+}

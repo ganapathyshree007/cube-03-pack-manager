@@ -1,0 +1,91 @@
+{
+  "$defs": {
+    "OrderLine": {
+      "additionalProperties": false,
+      "properties": {
+        "sku": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Sku",
+          "type": "string"
+        },
+        "quantity": {
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Quantity",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sku",
+        "quantity"
+      ],
+      "title": "OrderLine",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "unit_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Unit Id",
+      "type": "string"
+    },
+    "order_id": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Order Id",
+      "type": "string"
+    },
+    "route": {
+      "enum": [
+        "fba",
+        "merchant",
+        "3pl",
+        "unknown"
+      ],
+      "title": "Route",
+      "type": "string"
+    },
+    "shipment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Shipment Id"
+    },
+    "lines": {
+      "items": {
+        "$ref": "#/$defs/OrderLine"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Lines",
+      "type": "array"
+    },
+    "source": {
+      "additionalProperties": true,
+      "title": "Source",
+      "type": "object"
+    },
+    "fixture": {
+      "default": false,
+      "title": "Fixture",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "unit_id",
+    "order_id",
+    "route",
+    "lines"
+  ],
+  "title": "UnitInput",
+  "type": "object"
+}

@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Depends, Header, Request, UploadFile, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
+import httpx
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from backend.auth import Actor
@@ -25,6 +26,10 @@ from .contracts import UnitInput, Start, EventInput, ReviewInput, Control, Route
 
 def local_guard():
     cfg = settings()
+    if cfg.integrated_mode == "hosted":
+        from .hosting import hosted_guard
+        hosted_guard()
+        return
     if (
         urlsplit(cfg.database_url).hostname not in {"127.0.0.1", "localhost", "::1"}
         or urlsplit(cfg.database_url).username != "pack_app"
@@ -43,6 +48,9 @@ app = FastAPI(title="CUBE Integrated Local Backend", version="0.1.0", lifespan=l
 
 
 def actor(request: Request):
+    if settings().integrated_mode == "hosted":
+        from backend.auth import actor as hosted_actor
+        return hosted_actor(request)
     if not request.headers.get("authorization", "").startswith("Bearer "):
         svc.fail("AUTH_REQUIRED", 401)
     token = request.headers.get("authorization", "").removeprefix("Bearer ")
@@ -104,7 +112,7 @@ async def http_error(request, exc):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "mode": "local-only", "automatic_inference": "blocked"}
+    return {"status": "ok", "mode": settings().integrated_mode, "automatic_inference": "blocked"}
 
 
 @app.get("/v1/session")
@@ -191,6 +199,10 @@ def ready():
         ).one()
         if any(role):
             svc.fail("UNSAFE_DATABASE_ROLE", 503)
+    if settings().integrated_mode == "hosted":
+        from .hosting import private_bucket_ready
+        private_bucket_ready()
+        return {"status": "ready", "schema": "integrated.v1", "inference": "blocked"}
     root = Path(settings().storage_root)
     try:
         root.mkdir(parents=True, exist_ok=True)
@@ -199,7 +211,7 @@ def ready():
         with TemporaryFile(dir=root) as probe:
             probe.write(b"readiness")
             probe.flush()
-    except OSError:
+    except (OSError, RuntimeError, httpx.RequestError):
         svc.fail("STORAGE_UNAVAILABLE", 503)
     return {"status": "ready", "schema": "integrated.v1", "inference": "blocked"}
 
@@ -234,6 +246,8 @@ def create_product(body: Product, a=Depends(writer), idempotency_key: str = Head
 
 @app.post("/v1/units")
 def create_unit(body: UnitInput, a=Depends(writer), idempotency_key: str = Header(...)):
+    if settings().integrated_mode == "hosted" and settings().integrated_synthetic_only and not body.fixture:
+        svc.fail("ROUND3_SYNTHETIC_ONLY", 422)
     return svc.idem(
         a, "unit", idempotency_key, body.model_dump(), lambda c: svc.add_unit(c, a, body.model_dump())
     )
@@ -388,8 +402,13 @@ async def upload(workflow_id: str, file: UploadFile, a=Depends(writer), idempote
         except FileExistsError:
             if hashlib.sha256(storage.read(key)).digest() != hashlib.sha256(clean).digest():
                 svc.fail("STORAGE_CONFLICT", 503)
-        except OSError:
-            svc.fail("STORAGE_UNAVAILABLE", 503)
+        except (OSError, RuntimeError, httpx.RequestError):
+            # A previous attempt may have stored the same object before DB rollback.
+            try:
+                if hashlib.sha256(storage.read(key)).digest() != hashlib.sha256(clean).digest():
+                    svc.fail("STORAGE_CONFLICT", 503)
+            except (OSError, RuntimeError, httpx.RequestError):
+                svc.fail("STORAGE_UNAVAILABLE", 503)
         return insert_record(
             conn,
             a.organization,
@@ -416,5 +435,5 @@ def image(image_id: str, a=Depends(actor)):
         return Response(
             storage.read(data["key"]), media_type="image/jpeg", headers={"Cache-Control": "private, no-store"}
         )
-    except OSError:
+    except (OSError, RuntimeError, httpx.RequestError):
         svc.fail("STORAGE_UNAVAILABLE", 503)
