@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CrossPodEvidenceContract",
+  "description": "Standardized interoperability schema connecting Receiving, Prep, Pack, Returns, and Recovery Managers",
+  "definitions": {
+    "OperationalRecord": {
+      "type": "object",
+      "required": ["record_id", "unit_id", "org_id", "source_stage", "finding", "captured_at"],
+      "properties": {
+        "record_id": { "type": "string" },
+        "unit_id": { "type": "string" },
+        "org_id": { "type": "string" },
+        "source_stage": { "type": "string", "enum": ["receiving", "prep", "pack", "returns"] },
+        "finding": { "type": "string", "enum": ["PASS", "FAIL", "UNCERTAIN", "RESTOCKED", "DISPOSED", "SHORTAGE", "DAMAGED"] },
+        "operator_id": { "type": "string" },
+        "photo_refs": { "type": "string" },
+        "captured_at": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      }
+    },
+    "RecoveryClaim": {
+      "type": "object",
+      "required": ["claim_id", "charge_id", "org_id", "assessment", "amount", "currency", "evidence_chain"],
+      "properties": {
+        "claim_id": { "type": "string" },
+        "charge_id": { "type": "string" },
+        "org_id": { "type": "string" },
+        "assessment": { "type": "string", "enum": ["CONTRADICTED", "SUPPORTED", "SILENT", "UNCERTAIN", "DUPLICATE", "ALREADY_REIMBURSED"] },
+        "claim_supported": { "type": "boolean" },
+        "amount": { "type": "number", "minimum": 0 },
+        "currency": { "type": "string", "default": "USD" },
+        "reasoning": { "type": "string" },
+        "evidence_chain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["evidence_id", "source_stage", "finding"],
+            "properties": {
+              "evidence_id": { "type": "string" },
+              "source_stage": { "type": "string" },
+              "finding": { "type": "string" },
+              "establishes": { "type": "string" },
+              "does_not_establish": { "type": "string" }
+            }
+          }
+        },
+        "audit_packet": { "type": "object" }
+      }
+    }
+  }
+}

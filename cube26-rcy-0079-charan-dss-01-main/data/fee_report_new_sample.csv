@@ -1,0 +1,6 @@
+line_id,report_type,unit_id,org_id,sku,fnsku,fba_shipment_id,order_id,charge_type,quantity,amount_usd,posted_date
+FEE-NEW-0001,fee_report,UNIT-0001,org_demo_alpha,SKU-CANDLE-3,X00DUMMY001,FBA-DUMMY-100,ORD-DUMMY-50001,inbound_defect_fee,1,2.50,2026-08-01
+FEE-NEW-0002,fee_report,UNIT-0002,org_demo_alpha,SKU-CANDLE-3,X00DUMMY002,FBA-DUMMY-100,ORD-DUMMY-50002,fulfilment_fee_weight_tier,1,4.25,2026-08-02
+FEE-NEW-0003,inventory_adjustment,UNIT-0003,org_demo_alpha,SKU-PUZZLE-500,X00DUMMY003,FBA-DUMMY-100,,lost_inbound,1,3.00,2026-08-03
+FEE-NEW-0004,fee_report,UNIT-0004,org_demo_alpha,SKU-LAMP-LED,X00DUMMY004,FBA-DUMMY-101,,inbound_defect_fee,1,1.75,2026-08-04
+FEE-NEW-0005,fee_report,UNIT-0005,org_demo_alpha,SKU-LEASH-6FT,X00DUMMY005,FBA-DUMMY-100,ORD-DUMMY-50005,refund_issued_item_not_returned,1,4.50,2026-08-05

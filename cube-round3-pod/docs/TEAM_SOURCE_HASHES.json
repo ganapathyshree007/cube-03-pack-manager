@@ -1,0 +1,19 @@
+{
+  "C:\\SYDON\\cube26-prp-0310-fasihafatima06-main": {
+    "backend\\app\\agents\\evidence_agent.py": "e886d889afa9ef78fa1fa1d0f71a2d7844526602f6e934baea201916243a38b4",
+    "backend\\app\\vision\\provider_adapter.py": "3f8ebfaa639e02bd3d47307e714d6418d5c1fd10ded8060adaa0a4b1e3ded9a6"
+  },
+  "C:\\SYDON\\cube26-rcv-0286-sharonmedithi0304-main": {
+    "submissions\\sharonmedithi0304\\agent\\inspection_agent.py": "ae8c5b7654427eea512e316c00413b2a5f43bba9d6198334f0b875ab897bea0a",
+    "submissions\\sharonmedithi0304\\agent\\review_layer.py": "1934e39b0b4048a58f27299df73650b0446ec07ac461fd392030582c402c4d14",
+    "submissions\\sharonmedithi0304\\agent\\test_review_layer.py": "50a3f5c47039b3b5359c26c4b9619db6d82d60a1012368bc3ac8625ab118f622"
+  },
+  "C:\\SYDON\\cube26-rcy-0079-charan-dss-01-main": {
+    "backend\\app\\agents\\recovery_agent.py": "50bf25e02d9ab2d06ae6b2a993a877af5dcea28c4fe53cb2beea49d95541df1d",
+    "backend\\app\\services\\llm_reasoner.py": "aa521460a3ec04596c2009c73dfcaaa159aeede85ac955ce4ba68feb791f9c8d"
+  },
+  "C:\\SYDON\\cube26-rtn-0073-jahnavi2057-main": {
+    "submissions\\jahnavi2057\\agent\\server\\services\\disposition.js": "c3d3ae2a39eac584435390fa2e77cea025f8cedee069d64d9610b5bf3152cb67",
+    "submissions\\jahnavi2057\\agent\\server\\services\\vision.js": "d65956df227a3f4de1aea0c6db0383bf6bcf3aeb26da802c31cabe94385771b3"
+  }
+}

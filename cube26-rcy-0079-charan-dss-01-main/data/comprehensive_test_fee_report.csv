@@ -1,0 +1,12 @@
+line_id,report_type,unit_id,org_id,sku,fnsku,fba_shipment_id,order_id,charge_type,quantity,amount_usd,posted_date
+CH-TC01-CONTRADICTED-PREP,fee_report,UNIT-TC01,org_demo_alpha,SKU-LAMP-LED,X00TC01,FBA-TC-101,,inbound_defect_fee,1,35.00,2026-07-01
+CH-TC02-SUPPORTED-PREP,fee_report,UNIT-TC02,org_demo_alpha,SKU-PUZZLE-500,X00TC02,FBA-TC-101,,inbound_defect_fee,1,25.00,2026-07-01
+CH-TC03-SILENT-NO-EVIDENCE,fee_report,UNIT-TC03-GHOST,org_demo_alpha,SKU-UNKNOWN,X00TC03,FBA-TC-999,,inbound_defect_fee,1,50.00,2026-07-02
+CH-TC04-UNCERTAIN-AMBIGUOUS,fee_report,UNIT-TC04,org_demo_alpha,SKU-CABLE-USBC,X00TC04,FBA-TC-102,,inbound_defect_fee,1,40.00,2026-07-03
+CH-TC05-LOST-INBOUND-PROVED,fee_report,UNIT-TC05,org_demo_alpha,SKU-PROT-1KG,X00TC05,FBA-TC-103,,lost_inbound,1,85.00,2026-07-04
+CH-TC06-RETURNED-ITEM-DISPUTE,fee_report,UNIT-TC06,org_demo_alpha,SKU-LEASH-6FT,X00TC06,,ORD-TC-50006,refund_issued_item_not_returned,1,60.00,2026-07-05
+CH-TC07-DUPLICATE-ORIGINAL,fee_report,UNIT-TC07,org_demo_alpha,SKU-MUG-11,X00TC07,FBA-TC-DUP,,inbound_defect_fee,1,15.00,2026-07-06
+CH-TC08-DUPLICATE-REPEATED,fee_report,UNIT-TC07,org_demo_alpha,SKU-MUG-11,X00TC07,FBA-TC-DUP,,inbound_defect_fee,1,15.00,2026-07-06
+CH-TC09-ALREADY-REIMBURSED,fee_report,UNIT-TC09,org_demo_alpha,SKU-TOWEL-BLU,X00TC09,FBA-TC-CREDIT,,inbound_defect_fee,1,45.00,2026-07-07
+CR-TC09-OFFSETTING-CREDIT,fee_report,UNIT-TC09,org_demo_alpha,SKU-TOWEL-BLU,X00TC09,FBA-TC-CREDIT,,reimbursement_issued,1,-45.00,2026-07-07
+CH-TC10-UNMODELED-NOVEL-FEE,fee_report,UNIT-TC10,org_demo_alpha,SKU-SERUM-30,X00TC10,FBA-TC-AI,,unauthorized_prep_relabel_penalty,1,55.00,2026-07-08

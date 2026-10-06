@@ -1,0 +1,202 @@
+{
+  "$defs": {
+    "Instance": {
+      "additionalProperties": false,
+      "properties": {
+        "instance_id": {
+          "minLength": 1,
+          "title": "Instance Id",
+          "type": "string"
+        },
+        "sku": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Sku"
+        },
+        "variant": {
+          "default": "",
+          "title": "Variant",
+          "type": "string"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Region"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "instance_id",
+        "sku"
+      ],
+      "title": "Instance",
+      "type": "object"
+    },
+    "Region": {
+      "additionalProperties": false,
+      "description": "Provider-returned primary-image region, normalized x/y/width/height.",
+      "properties": {
+        "x": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Y",
+          "type": "number"
+        },
+        "width": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Height",
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "Region",
+      "type": "object"
+    },
+    "Review": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "labeled_at": {
+          "format": "date-time",
+          "title": "Labeled At",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "seal",
+            "stop_and_fix",
+            "uncertain"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "instances": {
+          "items": {
+            "$ref": "#/$defs/Instance"
+          },
+          "title": "Instances",
+          "type": "array"
+        },
+        "count_resolved": {
+          "title": "Count Resolved",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "labeled_at",
+        "decision",
+        "instances",
+        "count_resolved"
+      ],
+      "title": "Review",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "case_id": {
+      "title": "Case Id",
+      "type": "string"
+    },
+    "reviewer_a": {
+      "$ref": "#/$defs/Review"
+    },
+    "reviewer_b": {
+      "$ref": "#/$defs/Review"
+    },
+    "adjudicator_id": {
+      "minLength": 1,
+      "title": "Adjudicator Id",
+      "type": "string"
+    },
+    "adjudicated_at": {
+      "format": "date-time",
+      "title": "Adjudicated At",
+      "type": "string"
+    },
+    "adjudication_reason": {
+      "minLength": 5,
+      "title": "Adjudication Reason",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "seal",
+        "stop_and_fix",
+        "uncertain"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "instances": {
+      "items": {
+        "$ref": "#/$defs/Instance"
+      },
+      "title": "Instances",
+      "type": "array"
+    },
+    "count_resolved": {
+      "title": "Count Resolved",
+      "type": "boolean"
+    },
+    "physical_defect": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Physical Defect"
+    }
+  },
+  "required": [
+    "case_id",
+    "reviewer_a",
+    "reviewer_b",
+    "adjudicator_id",
+    "adjudicated_at",
+    "adjudication_reason",
+    "decision",
+    "instances",
+    "count_resolved",
+    "physical_defect"
+  ],
+  "title": "Label",
+  "type": "object"
+}

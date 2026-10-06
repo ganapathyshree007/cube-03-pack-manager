@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8f9fa;
+  --foreground: #1f2937;
+  --odoo-purple: #714B67;
+  --odoo-teal: #00A09D;
+}
+
+body {
+  background-color: #f8f9fa;
+  color: #1f2937;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Light Card Style */
+.cube-glass {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+.cube-glass:hover {
+  border-color: #cbd5e1;
+}
+
+/* Odoo Primary Purple CTA Button */
+.btn-indigo, .btn-odoo {
+  background: #714B67;
+  color: #ffffff;
+  box-shadow: 0 2px 8px 0 rgba(113, 75, 103, 0.25);
+  transition: all 0.2s ease;
+}
+.btn-indigo:hover, .btn-odoo:hover {
+  background: #5b3b53;
+  box-shadow: 0 4px 14px 0 rgba(113, 75, 103, 0.35);
+}
+
+/* Odoo Teal CTA Button */
+.btn-teal {
+  background: #00A09D;
+  color: #ffffff;
+  box-shadow: 0 2px 8px 0 rgba(0, 160, 157, 0.25);
+  transition: all 0.2s ease;
+}
+.btn-teal:hover {
+  background: #008b88;
+  box-shadow: 0 4px 14px 0 rgba(0, 160, 157, 0.35);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f8f9fa;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

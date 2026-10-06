@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[[redirects]]
+  from = "/api/*"
+  to = ":API_URL/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/sample_data/*"
+  to = ":API_URL/sample_data/:splat"
+  status = 200

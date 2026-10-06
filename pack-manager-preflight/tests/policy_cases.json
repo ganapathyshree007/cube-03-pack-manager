@@ -1,0 +1,19 @@
+[
+  {"id":"correct","checks":{},"expected":"SEAL"},
+  {"id":"missing_with_coverage","checks":{"quantity_matches":"FAIL"},"expected":"STOP & FIX"},
+  {"id":"wrong_item","checks":{"identity_verified":"FAIL"},"expected":"STOP & FIX"},
+  {"id":"extra_item","checks":{"no_unexpected_items":"FAIL"},"expected":"STOP & FIX"},
+  {"id":"wrong_quantity","checks":{"quantity_matches":"FAIL"},"expected":"STOP & FIX"},
+  {"id":"identical_overlap","checks":{"quantity_matches":"UNCERTAIN"},"expected":"UNCERTAIN"},
+  {"id":"unreadable_variant","checks":{"identity_verified":"UNCERTAIN"},"expected":"UNCERTAIN"},
+  {"id":"ambiguous_photo","checks":{"view_sufficient":"UNCERTAIN"},"expected":"UNCERTAIN"},
+  {"id":"mismatch_and_unknown","checks":{"quantity_matches":"FAIL","identity_verified":"UNCERTAIN"},"expected":"STOP & FIX"},
+  {"id":"hidden_not_missing","checks":{"view_sufficient":"UNCERTAIN","quantity_matches":"UNCERTAIN"},"expected":"UNCERTAIN"},
+  {"id":"barcode_conflict","checks":{"identity_verified":"UNCERTAIN"},"expected":"UNCERTAIN"},
+  {"id":"provider_timeout","checks":{},"execution":"failed","expected":"HOLD"},
+  {"id":"malformed_provider_output","checks":{},"execution":"failed","expected":"HOLD"},
+  {"id":"storage_failure","checks":{},"evidence_saved":false,"expected":"HOLD"},
+  {"id":"stale_attempt","checks":{},"current_attempt":false,"expected":"HOLD"},
+  {"id":"missing_mandatory_check","checks":{},"omit":"view_sufficient","expected":"UNCERTAIN"},
+  {"id":"invalid_image","checks":{"input_valid":"FAIL"},"expected":"HOLD"}
+]
