@@ -75,7 +75,7 @@ async def request_context(request: Request, call_next):
     if request.method == "OPTIONS":
         headers = {
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Request-ID",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Request-ID, Idempotency-Key",
             "Access-Control-Max-Age": "86400",
         }
         if origin and is_allowed_origin:
@@ -549,6 +549,13 @@ def create_attempt(payload: NewAttempt, who: Actor = Depends(actor)):
                 )
             ).mappings()
         ]
+        if payload.selected_product_ids is not None:
+            if not (1 <= len(payload.selected_product_ids) <= 4):
+                raise HTTPException(422, "Between 1 and 4 product identities must be selected for inspection")
+            selected_set = set(payload.selected_product_ids)
+            products = [p for p in products if p["id"] in selected_set]
+            if len(products) != len(selected_set):
+                raise HTTPException(422, "One or more selected catalogue products were not found")
         if len(products) > 30:
             raise HTTPException(409, "Baseline supports up to 30 catalogue SKUs")
         data = {

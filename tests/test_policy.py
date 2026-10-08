@@ -134,3 +134,50 @@ def test_hash_canonicalization_and_mutation():
     assert digest({"a": 1}) != digest({"a": 2})
     with pytest.raises(ValueError):
         digest({"x": float("nan")})
+
+
+def test_bounding_box_validation():
+    from backend.schemas import Instance
+    # Valid box
+    inst = Instance(
+        instance_id="inst1",
+        candidates=["SKU-A"],
+        identity_verified=True,
+        evidence="Visible box",
+        label_text="SKU-A",
+        bounding_box=[0.1, 0.2, 0.5, 0.8],
+    )
+    assert inst.bounding_box == [0.1, 0.2, 0.5, 0.8]
+
+    # Invalid box (impossible coordinates ymin >= ymax)
+    with pytest.raises(ValidationError):
+        Instance(
+            instance_id="inst2",
+            candidates=["SKU-A"],
+            identity_verified=True,
+            evidence="Visible box",
+            label_text="SKU-A",
+            bounding_box=[0.6, 0.2, 0.5, 0.8],
+        )
+
+    # Invalid box (out of 0-1 bounds)
+    with pytest.raises(ValidationError):
+        Instance(
+            instance_id="inst3",
+            candidates=["SKU-A"],
+            identity_verified=True,
+            evidence="Visible box",
+            label_text="SKU-A",
+            bounding_box=[-0.1, 0.2, 0.5, 1.2],
+        )
+
+
+def test_new_attempt_selected_product_ids():
+    from backend.schemas import NewAttempt
+    attempt = NewAttempt(order_id="ord-1", selected_product_ids=["p1", "p2"])
+    assert attempt.selected_product_ids == ["p1", "p2"]
+
+    # Exceeding max 4 selected product identities
+    with pytest.raises(ValidationError):
+        NewAttempt(order_id="ord-1", selected_product_ids=["p1", "p2", "p3", "p4", "p5"])
+

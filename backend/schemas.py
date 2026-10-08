@@ -42,6 +42,7 @@ class Order(Strict):
 class NewAttempt(Strict):
     order_id: str
     previous_attempt_id: str | None = None
+    selected_product_ids: list[str] | None = Field(default=None, max_length=4)
 
 
 class Submit(Strict):
@@ -78,6 +79,15 @@ class Instance(Strict):
     label_text: str | None
     source_image: Literal["primary"] = "primary"
     occlusion: str | None = None
+    bounding_box: list[float] | None = Field(default=None, min_length=4, max_length=4)
+
+    @model_validator(mode="after")
+    def validate_bounding_box(self):
+        if self.bounding_box is not None:
+            ymin, xmin, ymax, xmax = self.bounding_box
+            if not (0.0 <= ymin < ymax <= 1.0 and 0.0 <= xmin < xmax <= 1.0):
+                raise ValueError("Bounding box coordinates must be normalized [ymin, xmin, ymax, xmax] with 0 <= min < max <= 1")
+        return self
 
 
 class VisionObservation(Strict):

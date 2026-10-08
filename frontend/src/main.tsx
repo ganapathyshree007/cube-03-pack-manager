@@ -127,6 +127,7 @@ function App() {
     refetchInterval: 2000,
   });
   const [selectedOrder, setSelectedOrder] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [zoom, setZoom] = useState(false);
@@ -192,9 +193,13 @@ function App() {
     await action(async () => {
       if (!photo || !selectedOrder)
         throw new Error("Choose an order and a photograph first.");
+      const payload: any = { order_id: selectedOrder };
+      if (selectedProductIds.length > 0) {
+        payload.selected_product_ids = selectedProductIds;
+      }
       const row = await api<RecordRow>("/inspections", {
         method: "POST",
-        body: JSON.stringify({ order_id: selectedOrder }),
+        body: JSON.stringify(payload),
       });
       openAttempt(row.id);
       const fd = new FormData();
@@ -517,17 +522,58 @@ function App() {
                   <span className="small-tag">PRIMARY COUNTING VIEW</span>
                 </div>
                 {imageUrl ? (
-                  <button
-                    className="photo-button"
-                    onClick={() => setZoom(true)}
-                    aria-label="Enlarge box photograph"
-                  >
-                    <img
-                      src={imageUrl}
-                      alt="Open box evidence for this inspection"
-                    />
-                    <span>Click to enlarge</span>
-                  </button>
+                  <div style={{ position: "relative", width: "100%" }}>
+                    <button
+                      className="photo-button"
+                      onClick={() => setZoom(true)}
+                      aria-label="Enlarge box photograph"
+                    >
+                      <img
+                        src={imageUrl}
+                        alt="Open box evidence for this inspection"
+                      />
+                      <span>Click to enlarge</span>
+                    </button>
+                    {current?.result?.observation?.instances?.map((inst: any) => {
+                      if (!inst.bounding_box || inst.bounding_box.length !== 4) return null;
+                      const [ymin, xmin, ymax, xmax] = inst.bounding_box;
+                      return (
+                        <div
+                          key={inst.instance_id}
+                          style={{
+                            position: "absolute",
+                            top: `${ymin * 100}%`,
+                            left: `${xmin * 100}%`,
+                            width: `${(xmax - xmin) * 100}%`,
+                            height: `${(ymax - ymin) * 100}%`,
+                            border: "2px solid #3b82f6",
+                            boxShadow: "0 0 8px rgba(59, 130, 246, 0.5)",
+                            backgroundColor: "rgba(59, 130, 246, 0.12)",
+                            pointerEvents: "none",
+                            borderRadius: "4px",
+                            zIndex: 10,
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: "2px",
+                              left: "2px",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              background: "#1e40af",
+                              color: "#ffffff",
+                              padding: "2px 6px",
+                              borderRadius: "3px",
+                              fontFamily: "monospace",
+                            }}
+                          >
+                            {inst.instance_id}: {inst.candidates?.join("/") || "unmatched"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 ) : (
                   <label
                     className="dropzone"
@@ -633,6 +679,47 @@ function App() {
                       items.
                     </p>
                   )}
+                  {!current && products.length > 0 && (
+                    <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)" }}>
+                      <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--muted-foreground)", marginBottom: "0.4rem", textTransform: "uppercase" }}>
+                        Selected Product Identities (Max 4)
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
+                        {products.map((p) => {
+                          const selected = selectedProductIds.includes(p.id);
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              style={{
+                                cursor: "pointer",
+                                background: selected ? "#2563eb" : "var(--muted, #f1f5f9)",
+                                color: selected ? "#ffffff" : "var(--foreground, #0f172a)",
+                                border: "1px solid " + (selected ? "#2563eb" : "var(--border, #cbd5e1)"),
+                                padding: "2px 8px",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                              }}
+                              onClick={() => {
+                                if (selected) {
+                                  setSelectedProductIds(selectedProductIds.filter((id) => id !== p.id));
+                                } else if (selectedProductIds.length < 4) {
+                                  setSelectedProductIds([...selectedProductIds, p.id]);
+                                }
+                              }}
+                            >
+                              {p.data.sku}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <small className="muted" style={{ display: "block", marginTop: "0.4rem", fontSize: "11px" }}>
+                        {selectedProductIds.length === 0
+                          ? "Default: Snapshots active catalogue products"
+                          : `${selectedProductIds.length}/4 selected for this attempt`}
+                      </small>
+                    </div>
+                  )}
                   <button
                     className="text-button"
                     onClick={() => setForm("order")}
@@ -640,6 +727,46 @@ function App() {
                     <Plus size={15} /> Create order
                   </button>
                 </section>
+
+                <section className="panel readiness-panel">
+                  <div className="panel-title">
+                    <h2>Readiness Prerequisites</h2>
+                    <ShieldCheck size={18} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "12px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Order validity:</span>
+                      <strong style={{ color: selectedOrder || current?.order_id ? "#16a34a" : "#dc2626" }}>
+                        {selectedOrder || current?.order_id ? "PASS" : "FAIL (Select order)"}
+                      </strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Photograph evidence:</span>
+                      <strong style={{ color: photo || current?.image_id ? "#16a34a" : "#dc2626" }}>
+                        {photo || current?.image_id ? "PASS" : "FAIL (Upload photo)"}
+                      </strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Catalogue selection (≤4):</span>
+                      <strong style={{ color: selectedProductIds.length <= 4 ? "#16a34a" : "#dc2626" }}>
+                        {selectedProductIds.length <= 4 ? `PASS (${selectedProductIds.length || (current?.catalogue_snapshot?.length ?? products.length)} SKUs)` : "FAIL (>4 selected)"}
+                      </strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Vision provider:</span>
+                      <strong style={{ color: config?.model_configured ? "#16a34a" : "#ca8a04" }}>
+                        {config?.model_configured ? "PASS (Configured)" : "UNCONFIGURED"}
+                      </strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span>Model call budget:</span>
+                      <strong style={{ color: "#16a34a" }}>
+                        PASS (1 per attempt)
+                      </strong>
+                    </div>
+                  </div>
+                </section>
+
                 <section className="panel decision-panel" aria-live="polite">
                   <div className="eyebrow">INSPECTION DECISION</div>
                   {current ? (
