@@ -12,9 +12,9 @@ services:
     runtime: docker
     region: singapore
     plan: free
-    autoDeployTrigger: off
+    autoDeployTrigger: commit
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/v1/health/ready
+    healthCheckPath: /api/v1/health/live
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -36,5 +36,7 @@ services:
         value: local
       - key: STORAGE_MODE
         value: local
+      - key: STORAGE_ROOT
+        value: /app/.local/images
       - key: ALLOWED_ORIGINS
         sync: false
