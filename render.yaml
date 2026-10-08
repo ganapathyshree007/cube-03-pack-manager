@@ -1,5 +1,8 @@
 # Render Blueprint for CUBE Pack Manager
 # Production Architecture: Render Managed PostgreSQL + Render FastAPI Web Service + Gemini Vision Provider
+#
+# Migrations are run automatically by docker-entrypoint.sh on every deploy
+# before the uvicorn process starts. No manual shell access is required.
 databases:
   - name: pack-manager-db
     databaseName: pack_manager
@@ -39,4 +42,4 @@ services:
       - key: STORAGE_ROOT
         value: /app/.local/images
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: "https://cube-03-pack-manager-five.vercel.app"
